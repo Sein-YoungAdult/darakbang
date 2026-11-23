@@ -8224,6 +8224,7 @@ CHANGELOG.unshift(['2026-11-23', '', '셀 편성판 분류 태그 · 한 사람 
   '셀 편성판 정렬에 "분류순"(핵심 → 안정 → 관심 → 돌봄 필요 → 장결 위험)을 넣었습니다',
   '한 사람 보기 — 나이 · 생일 · 연락처 · 셀 · 상태 · 분류 · 출석 · 말씀 · 큐티 · 사역 참여 · 사역팀 · 기도제목을 한 창에서 봅니다. 전체 표 · 참여 · 경건 통계의 이름, 우리 셀의 셀원 펼침, 셀 편성판(보기만 하는 사람)에서 엽니다. 볼 수 있는 사람은 참여 · 경건 통계와 같습니다']]);
 
+const introHTML = () => `<div class="stage"><span class="lgwrap"><img src="${LOGO_IMG}" alt="세인 1청년부 다락방"><svg class="inoff" viewBox="0 0 1946 1485" aria-hidden="true"><g fill="#CDBFAE"><circle class="off" cx="579" cy="411" r="21" style="--i:0"/><circle class="off" cx="671" cy="375" r="21" style="--i:1"/><circle class="off" cx="758" cy="323" r="21" style="--i:2"/><circle class="off" cx="837" cy="264" r="21" style="--i:3"/><circle class="off" cx="906" cy="198" r="21" style="--i:4"/><circle class="off" cx="983" cy="194" r="21" style="--i:5"/><circle class="off" cx="1052" cy="262" r="21" style="--i:6"/><circle class="off" cx="1130" cy="325" r="21" style="--i:7"/><circle class="off" cx="1215" cy="375" r="21" style="--i:8"/><circle class="off" cx="1307" cy="411" r="21" style="--i:9"/></g></svg><svg class="infx" viewBox="0 0 1946 1485" aria-hidden="true"><defs><radialGradient id="infxB"><stop offset="0" stop-color="#FFF6C8" stop-opacity="1"/><stop offset=".35" stop-color="#FFE48A" stop-opacity=".75"/><stop offset="1" stop-color="#FFD36A" stop-opacity="0"/></radialGradient><radialGradient id="infxW"><stop offset="0" stop-color="#FFF4D6" stop-opacity=".95"/><stop offset=".5" stop-color="#FFE7A8" stop-opacity=".45"/><stop offset="1" stop-color="#FFE7A8" stop-opacity="0"/></radialGradient></defs><circle class="win" cx="948" cy="340" r="190" fill="url(#infxW)"/><g fill="url(#infxB)"><circle class="bulb" cx="579" cy="411" r="46" style="--i:0"/><circle class="bulb" cx="671" cy="375" r="46" style="--i:1"/><circle class="bulb" cx="758" cy="323" r="46" style="--i:2"/><circle class="bulb" cx="837" cy="264" r="46" style="--i:3"/><circle class="bulb" cx="906" cy="198" r="46" style="--i:4"/><circle class="bulb" cx="983" cy="194" r="46" style="--i:5"/><circle class="bulb" cx="1052" cy="262" r="46" style="--i:6"/><circle class="bulb" cx="1130" cy="325" r="46" style="--i:7"/><circle class="bulb" cx="1215" cy="375" r="46" style="--i:8"/><circle class="bulb" cx="1307" cy="411" r="46" style="--i:9"/></g></svg></span></div><div class="light"></div><button class="skip" type="button">건너뛰기</button>`;   // v102 — 들어가는 장면 그림(첫 script에 둠 — 기다림 화면이 처음 그릴 때 씀)
 /* ================= v102 — 서버 연결 (2026-11-23 15:17 회장 "실제로 연결해보자") =================
    ① sheetTabs() — 다락방 자료를 원본 시트 꼴(파일 · 탭 · 열 · 줄)로. sheets/export_sheets.js도 이 함수를 부름(한 곳)
    ② CODEC — 시트 줄 → 다락방 자료(서버에서 받은 것을 화면 자료에 얹음). 열쇠 · 계산 칸(다시 쓰지 않음)
@@ -8397,7 +8398,7 @@ CODEC.로그 = {key:null, local:true, dec:R => LOG.splice(0, LOG.length, ...R.sl
 const CVLOCAL = ['체크리스트틀', '담당기준', '담당예외', '직책설명', '장소', '사용자', '설정', '로그', '연간요약', '국매뉴얼', '개선과제', '항목표', '월마감', '결산', '예배일지'];
 
 /* ---------- ③ SRV — 서버와 주고받기. SRV.url이 비면(시험판 · 게시본) 아무것도 하지 않음 ---------- */
-const SRV = {url:'https://script.google.com/macros/s/AKfycbwWtGi7KaPkrkP01rz4Hfvqk_Hb5CTgm-HgNT2qvvoUiNra1kYrrLC73xhEiGBsJEk/exec', state:'off', tok:null, user:null, base:null, ready:false, busy:false, again:false, dirty:false, t:0, at:'', err:'', bad:[], users:null, loadedAt:0, loading:false, ver:{}, ms:{}};
+const SRV = {url:'https://script.google.com/macros/s/AKfycbwWtGi7KaPkrkP01rz4Hfvqk_Hb5CTgm-HgNT2qvvoUiNra1kYrrLC73xhEiGBsJEk/exec', state:'off', tok:null, user:null, base:null, ready:false, busy:false, again:false, dirty:false, t:0, at:'', err:'', bad:[], users:null, loadedAt:0, loading:false, ver:{}, ms:{}, sv:{}};
 SRV.on = /^https?:\/\//.test(SRV.url);
 const SRVTK = 'sein_srv_tok';
 function srvTokGet(){ try { return localStorage.getItem(SRVTK) || sessionStorage.getItem(SRVTK); } catch (e) { return null; } }
@@ -8405,7 +8406,7 @@ function srvTokSet(t, keep){ try { localStorage.removeItem(SRVTK); sessionStorag
 async function api(a, p){
   let j; const t0 = performance.now(); try { const r = await fetch(SRV.url, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(Object.assign({a}, SRV.tok ? {token:SRV.tok} : {}, p || {})), cache:'no-store', redirect:'follow'}); j = await r.json(); }
   catch (e) { j = null; }
-  if (j && j.ok && ['login', 'load', 'write', 'merge', 'ver'].includes(a)) SRV.ms[a] = Math.round(performance.now() - t0);   // 걸린 시간(왼쪽 아래에 보임)
+  if (j && j.ok && ['login', 'load', 'write', 'merge', 'ver'].includes(a)) { SRV.ms[a] = Math.round(performance.now() - t0); if (j.ms !== undefined) SRV.sv[a] = {ms:j.ms, tm:j.tm || {}}; }   // 걸린 시간(메뉴 끝에 보임) · 서버 안에서 쓴 시간
   if (j && j.ok && j.ver && j.ver.f) srvVer(j.ver);
   if (!j || typeof j !== 'object') j = {ok:false, error:'서버에 닿지 않습니다 — 인터넷 연결을 확인해 주세요', code:'net'};
   if (!j.ok && j.code === 'auth' && a !== 'login' && /다시 로그인/.test(j.error || '')) srvGone('로그인이 끝났습니다 — 다시 로그인해 주세요');
@@ -8492,7 +8493,7 @@ const srvPending = () => { if (!SRV.ready || !SRV.base) return false; const cur 
 /* 불러오기 — 처음 · 새로 고침(돌아왔을 때 · 5분마다) */
 async function srvLoad(o){ o = o || {}; if (SRV.loading) return false; SRV.loading = true; srvPill();
   try { if (SRV.ready && !o.data) { await srvSync(); if (SRV.err) return false; }
-    const j = o.data || await api('load', o.files ? {files:o.files} : {}); if (!j.ok) { SRV.err = j.error || '불러오지 못했습니다'; if (SRV.state !== 'in') { SRV.state = 'fail'; srvView(); } else toast(SRV.err); return false; }
+    const j = o.data || await api('load', Object.assign({tabs:CVORDER}, o.files ? {files:o.files} : {})); if (!j.ok) { SRV.err = j.error || '불러오지 못했습니다'; if (SRV.state !== 'in') { SRV.state = 'fail'; srvView(); } else toast(SRV.err); return false; }
     SRV.user = j.user; const me = srvSeat(j.user); S.role = me.role; S.name = me.name; S.cell = me.cell; S.team = me.team; S.year = THIS_YEAR + 1; S.arch = null; save();
     SRV.ready = false; yearSwap(); srvApply(j.tabs || {}); SRV.state = 'in'; SRV.loadedAt = Date.now(); SRV.err = ''; (j.files || Object.keys(j.ver || {})).forEach(f => { if (j.ver && j.ver[f]) SRV.ver[f] = j.ver[f]; });
     _render0(); SRV.base = srvEnc(); SRV.ready = true; SRV.at = new Date().toTimeString().slice(0, 5);
@@ -8502,17 +8503,28 @@ async function srvLoad(o){ o = o || {}; if (SRV.loading) return false; SRV.loadi
 async function srvBoot(){ SRV.state = 'boot'; SRV.tok = srvTokGet(); S.role = null; S.name = null;
   let msg = null; try { msg = sessionStorage.getItem('sein_srv_msg'); sessionStorage.removeItem('sein_srv_msg'); } catch (e) {}
   if (!SRV.tok) { SRV.state = 'out'; render(); if (msg) toast(msg); api('ping'); return; }   // 로그인 화면이 뜨면 서버를 미리 깨움(쉬던 서버는 첫 요청이 1 ~ 2초 늦음) — 비밀번호를 치는 동안
-  srvView(); const ok = await srvLoad(); if (ok) { if (!location.hash || location.hash === '#login' || location.hash === '#home') go(homeDoor()); setTimeout(popups, 350); } }
+  srvView(); const ok = await srvLoad(); if (ok) { if (!location.hash || location.hash === '#login' || location.hash === '#home') go(homeDoor()); srvWaitDone(); setTimeout(popups, 1300); } else srvWaitDone(true); }
+function srvWait(msg){ srvUnveil(); let d = document.getElementById('intro'); const still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!d || !d.classList.contains('srvwait')) { if (d) d.remove(); d = document.createElement('div'); d.id = 'intro'; d.className = 'srvwait' + (still ? ' still' : ''); d.innerHTML = introHTML() + '<div class="srvmsg" role="status" aria-live="polite"></div>'; document.body.appendChild(d);
+    const sk = d.querySelector('.skip'); if (sk) sk.remove(); requestAnimationFrame(() => d.classList.add('s1'));
+    const B = [...d.querySelectorAll('.infx .bulb')], O = [...d.querySelectorAll('.inoff .off')]; let i = 0;   // 전구 열 개 — 0.35초마다 하나씩(다 켜지면 창이 숨 쉼)
+    d._t = setInterval(() => { if (i < B.length) { B[i].classList.add('on'); if (O[i]) O[i].classList.add('on'); i++; } else d.classList.add('lit'); }, still ? 50 : 350); }
+  d.querySelector('.srvmsg').textContent = msg + '…'; }
+function srvWaitDone(fail){ const d = document.getElementById('intro'); if (!d || !d.classList.contains('srvwait')) return; clearInterval(d._t);
+  if (fail || d.classList.contains('still')) { d.classList.add('out'); setTimeout(() => d.remove(), 400); return; }
+  d.querySelectorAll('.infx .bulb, .inoff .off').forEach(x => x.classList.add('on')); d.classList.add('lit');
+  const st = d.querySelector('.stage').getBoundingClientRect(), L = d.querySelector('.light'); L.style.left = (st.left + st.width * 0.4872) + 'px'; L.style.top = (st.top + st.height * 0.2290) + 'px';
+  setTimeout(() => d.classList.add('s3'), 120); setTimeout(() => { d.classList.add('out'); setTimeout(() => d.remove(), 550); }, 900); }
 const srvUnveil = () => { const v = document.getElementById('srvpre'); if (v) v.remove(); };
-function srvView(){ const p = document.getElementById('page'); if (!p) return; srvUnveil();
+function srvView(){ const p = document.getElementById('page'); if (!p) return; srvUnveil(); if (SRV.state === 'boot') srvWait('시트에서 올해 자료를 불러오는 중'); else srvWaitDone(true);
   p.innerHTML = SRV.state === 'fail' ? `<div class="lock"><div class="ic">⚠︎</div><h2>불러오지 못했습니다</h2><p class="note">${esc(SRV.err || '')}</p><div class="row"><button class="btn p" onclick="srvBoot()">다시</button><button class="btn" onclick="srvGone('나갔습니다')">로그인 화면으로</button></div></div>`
     : `<div class="lock srvload"><div class="ic">⏳︎</div><h2>불러오는 중…</h2><p class="note">시트에서 올해 자료를 가져옵니다</p></div>`; }
 async function srvLogin(role, seat, pw, keep){ if (SRV.loading) return; const btn = document.querySelector('#loginf .btn.p, #mlf .btn.p'); if (btn) btn.disabled = true;
-  if (btn) btn.textContent = '들어가는 중…'; const j = await api('login', {role, seat, pw, keep, load:true}); if (btn) { btn.disabled = false; btn.textContent = role === '관리자' ? '들어가기' : '로그인'; }
-  if (!j.ok) { toast(j.error || '로그인하지 못했습니다'); return; }
-  SRV.tok = j.token; srvTokSet(j.token, keep && role !== '관리자'); S.keep = keep; closeModal(); SRV.state = 'boot'; srvView();
-  const ok = await srvLoad(j.data ? {data:j.data} : {}); if (!ok) return; DISMISS.clear(); V2.tscope = null; V2.tperson = null; V2.ttype = null; V2.inboxAll = false; V2.monthOpen = false;
-  go(homeDoor()); setTimeout(popups, 350); log('로그인', '들어옴', S.name || S.role);
+  if (btn) btn.textContent = '들어가는 중…'; srvWait('로그인 확인 중'); const j = await api('login', {role, seat, pw, keep, load:true, tabs:CVORDER}); if (btn) { btn.disabled = false; btn.textContent = role === '관리자' ? '들어가기' : '로그인'; }
+  if (!j.ok) { srvWaitDone(true); toast(j.error || '로그인하지 못했습니다'); return; }
+  srvWait('화면 준비 중'); SRV.tok = j.token; srvTokSet(j.token, keep && role !== '관리자'); S.keep = keep; closeModal(); SRV.state = 'boot'; srvView();
+  const ok = await srvLoad(j.data ? {data:j.data} : {}); if (!ok) { srvWaitDone(true); return; } DISMISS.clear(); V2.tscope = null; V2.tperson = null; V2.ttype = null; V2.inboxAll = false; V2.monthOpen = false;
+  go(homeDoor()); srvWaitDone(); setTimeout(popups, 1300); log('로그인', '들어옴', S.name || S.role);
   toast(`${S.name} · ${S.role === '마스터' ? '관리자' : S.role}${S.cell ? ' (' + S.cell + ')' : S.team ? ' (' + S.team + ')' : ''}로 로그인했습니다`);
   if (j.temp) setTimeout(() => toast('처음 받은 비밀번호입니다 — 메뉴 아래 "비밀번호 바꾸기"에서 바꿔 주세요'), 3200); }
 
@@ -8524,7 +8536,8 @@ const srvIdle = () => SRV.state === 'in' && SRV.ready && !SRV.busy && !SRV.loadi
 function srvPill(){ if (!SRV.on) return; let el = document.getElementById('srvst'); if (!el) { el = document.createElement('button'); el.id = 'srvst'; el.type = 'button'; el.className = 'srvst'; el.onclick = () => { if (SRV.state === 'in') srvLoad().then(ok => ok && toast('시트에서 새로 불러왔습니다')); }; document.body.appendChild(el); }
   el.hidden = SRV.state !== 'in'; const [cls, l, t] = SRV.loading ? ['', '불러오는 중…', ''] : SRV.busy ? ['', '저장 중…', ''] : SRV.err ? ['warn', '저장 대기', SRV.err] : ['ok', '저장됨', SRV.at || ''];
   el.className = 'srvst ' + cls; el.innerHTML = `<span class="l">${esc(l)}</span>${t ? ` <span class="t">${esc(t)}</span>` : ''}`; el.title = (SRV.err ? SRV.err + ' — ' : '') + '누르면 시트에서 새로 불러옵니다'; el.setAttribute('aria-label', l + ' ' + t);
-  const f = document.querySelector('.sbfoot'); if (f) { let m = document.getElementById('srvms'); if (!m) { m = document.createElement('div'); m.id = 'srvms'; m.className = 'note'; m.style.cssText = 'font-size:11px;margin-top:4px'; f.appendChild(m); } const sec = k => SRV.ms[k] === undefined ? '—' : (SRV.ms[k] / 1000).toFixed(1) + '초'; m.textContent = SRV.state === 'in' ? `서버 응답 · 로그인 ${sec('login')} · 불러오기 ${sec('load')} · 저장 ${sec(SRV.ms.write === undefined ? 'merge' : 'write')}` : ''; } }
+  const f = document.querySelector('.sbfoot'); if (f) { let m = document.getElementById('srvms'); if (!m) { m = document.createElement('div'); m.id = 'srvms'; m.className = 'note'; m.style.cssText = 'font-size:11px;margin-top:4px'; f.appendChild(m); } const sec = k => SRV.ms[k] === undefined ? '—' : (SRV.ms[k] / 1000).toFixed(1) + '초'; const sv = SRV.sv.login, top = sv ? Object.entries(sv.tm).filter(([k]) => k !== '_').sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => `${k} ${(v / 1000).toFixed(1)}`).join(' · ') : '';
+    m.textContent = SRV.state === 'in' ? `서버 응답 · 로그인 ${sec('login')}${sv ? ` (서버 안 ${(sv.ms / 1000).toFixed(1)}초 — ${top})` : ''} · 불러오기 ${sec('load')} · 저장 ${sec(SRV.ms.write === undefined ? 'merge' : 'write')}` : ''; } }
 
 /* 다락방 쪽 갈아 끼우기 — 서버가 있을 때만 */
 const _render0 = render;
@@ -8537,10 +8550,14 @@ if (SRV.on) {
   document.head.insertAdjacentHTML('beforeend', `<style>
 body.srv #yseg,body.srv #lghome,body.srv #lgcal,body.srv #admtmp,body.srv #testbox{display:none!important}
 body.srv #loginf label:has(#lname){display:none}
+body.srv .login .lghelp{margin-top:20px!important}
 .srvst{position:fixed;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:60;border:1px solid var(--line);background:var(--card,#fff);color:var(--muted,#666);font:inherit;font-size:11.5px;padding:4px 10px;border-radius:999px;box-shadow:0 1px 4px rgba(0,0,0,.08);cursor:pointer;max-width:70vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .srvst.ok::before{content:'●';color:var(--ok,#2e7d32);margin-right:5px;font-size:9px}
 .srvst.warn{color:#8a5a00;border-color:#e0b050;background:#fff8e6}
 .srvload .ic{animation:srvp 1.4s ease-in-out infinite}@keyframes srvp{50%{opacity:.35}}
+#intro.srvwait .infx .bulb.on{opacity:1}#intro.srvwait .inoff .off.on{opacity:0}#intro.srvwait.lit .infx .win{opacity:1;animation:srvwin 1.6s ease-in-out infinite}@keyframes srvwin{50%{opacity:.45}}
+#intro.srvwait.still .stage{transform:none;opacity:1;animation:none}
+#intro .srvmsg{position:fixed;left:0;right:0;bottom:calc(18vh + env(safe-area-inset-bottom,0px));text-align:center;color:#9A8F86;font-size:14px;letter-spacing:.02em;transition:opacity .3s}#intro.s3 .srvmsg{opacity:0}
 body.srv #ynote .btn{display:none}
 @media (max-width:900px){.srvst{top:calc(env(safe-area-inset-top,0px) + 13px);bottom:auto;right:max(12px,env(safe-area-inset-right,0px));padding:3px 9px;font-size:11px;max-width:46vw}.srvst.ok .l{display:none}.srvst.warn .t{display:none}body.menu-open .srvst{display:none}}
 </style>`);
@@ -8580,6 +8597,7 @@ body.srv #ynote .btn{display:none}
 }
 function srvAfter(){ const lf = document.getElementById('loginf');
   if (lf) { const pw = document.getElementById('lpw'); if (pw && pw.value === '0000') pw.value = '';
+    { const k = lf.querySelector('.lgkeep'); if (k && !document.getElementById('srvkeephint')) k.insertAdjacentHTML('afterend', '<p class="note" id="srvkeephint" style="margin:-6px 0 2px;font-size:12px">내 폰 · 내 컴퓨터면 켜 두세요 — 30일 동안 다시 묻지 않습니다. 같이 쓰는 컴퓨터에서는 끄기.</p>'); }
     lf.onsubmit = e => { e.preventDefault(); const lr = document.getElementById('lrole').value, ls = (document.getElementById('lsub') || {}).value || '', kp = document.getElementById('lkeep');
       S.door = loginDoorOf(); srvLogin(lr === '팀장' ? (ls || '새가족팀장') : lr, lr === '셀리더' ? ls : '', document.getElementById('lpw').value, kp ? kp.checked : true); }; } }
 function srvUsersHtml(){ if (!SRV.users) { srvUsers(); return '<div class="empty" id="srvusers">사용자 목록을 불러오는 중…</div>'; }
@@ -8604,6 +8622,7 @@ CHANGELOG.unshift(['2026-11-23', '', '서버 연결 준비 — 시트와 주고�
   '다른 사람이 바꾼 것은 20초 안에 저절로 보입니다(바뀐 파일만 다시 받음) · 로그인과 불러오기를 한 번에 · 나가기는 기다리지 않음',
   '실무자 — 한 줄에 정하면 그 줄만 바뀝니다. 같은 자리 줄에 같이 붙이기 · 같이 비우기는 체크할 때만(줄 수 · 사역 수를 보여 줌)',
   '이름 고르기 — 이름을 끝까지 친 뒤 목록에서 골라도 바로 이름표로 들어갑니다',
+  '불러오는 동안 다락방 로고의 전구가 하나씩 켜지고, 다 되면 창 쪽으로 들어갑니다 · 다락방에 이미 있는 큰 탭(체크리스트 틀)은 서버에서 다시 받지 않음',
   '주일 예배의 "콘티 도우미" 단추가 새 콘티 도우미(sein-songlist)로 열립니다',
   '아직 안 되는 것 — 지우기, 영수증 사진 올리기, 심방일지 쓰기(읽기만), 조직 · 사용자 바꾸기(시트에서)']]);
 
@@ -8622,7 +8641,7 @@ function introPlay(force){
   const old = document.getElementById('intro'); if (old) old.remove();
   // 방 영상은 손대지 않고 뒤에서 그대로 재생 — 폰은 처음 열 때만 재생을 허락하고, 나중에 다시 틀거나 새로 띄우면 막는 경우가 있음
   const d = document.createElement('div'); d.id = 'intro';
-  d.innerHTML = `<div class="stage"><span class="lgwrap"><img src="${LOGO_IMG}" alt="세인 1청년부 다락방"><svg class="inoff" viewBox="0 0 1946 1485" aria-hidden="true"><g fill="#CDBFAE"><circle class="off" cx="579" cy="411" r="21" style="--i:0"/><circle class="off" cx="671" cy="375" r="21" style="--i:1"/><circle class="off" cx="758" cy="323" r="21" style="--i:2"/><circle class="off" cx="837" cy="264" r="21" style="--i:3"/><circle class="off" cx="906" cy="198" r="21" style="--i:4"/><circle class="off" cx="983" cy="194" r="21" style="--i:5"/><circle class="off" cx="1052" cy="262" r="21" style="--i:6"/><circle class="off" cx="1130" cy="325" r="21" style="--i:7"/><circle class="off" cx="1215" cy="375" r="21" style="--i:8"/><circle class="off" cx="1307" cy="411" r="21" style="--i:9"/></g></svg><svg class="infx" viewBox="0 0 1946 1485" aria-hidden="true"><defs><radialGradient id="infxB"><stop offset="0" stop-color="#FFF6C8" stop-opacity="1"/><stop offset=".35" stop-color="#FFE48A" stop-opacity=".75"/><stop offset="1" stop-color="#FFD36A" stop-opacity="0"/></radialGradient><radialGradient id="infxW"><stop offset="0" stop-color="#FFF4D6" stop-opacity=".95"/><stop offset=".5" stop-color="#FFE7A8" stop-opacity=".45"/><stop offset="1" stop-color="#FFE7A8" stop-opacity="0"/></radialGradient></defs><circle class="win" cx="948" cy="340" r="190" fill="url(#infxW)"/><g fill="url(#infxB)"><circle class="bulb" cx="579" cy="411" r="46" style="--i:0"/><circle class="bulb" cx="671" cy="375" r="46" style="--i:1"/><circle class="bulb" cx="758" cy="323" r="46" style="--i:2"/><circle class="bulb" cx="837" cy="264" r="46" style="--i:3"/><circle class="bulb" cx="906" cy="198" r="46" style="--i:4"/><circle class="bulb" cx="983" cy="194" r="46" style="--i:5"/><circle class="bulb" cx="1052" cy="262" r="46" style="--i:6"/><circle class="bulb" cx="1130" cy="325" r="46" style="--i:7"/><circle class="bulb" cx="1215" cy="375" r="46" style="--i:8"/><circle class="bulb" cx="1307" cy="411" r="46" style="--i:9"/></g></svg></span></div><div class="light"></div><button class="skip" type="button">건너뛰기</button>`;
+  d.innerHTML = introHTML();
   document.body.appendChild(d);
   const T = []; const at = (ms, f) => T.push(setTimeout(f, ms));
   const done = () => { T.forEach(clearTimeout); d.classList.add('out'); setTimeout(() => d.remove(), 600);
