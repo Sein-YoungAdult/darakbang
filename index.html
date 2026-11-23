@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}img{max-width:100%}</style>
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><style id="srvpre">.app,.tabbar{visibility:hidden}</style><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}img{max-width:100%}</style>
 <title>세인 1청년부 다락방</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&family=Noto+Serif+KR:wght@500;700&display=swap">
@@ -3516,7 +3516,7 @@ const KINDCLS = {참석:'navy', 투표:'coral', 선택:'grey', 신청:'ok'};
 
 const WORSHIP = {date:'2026-11-01', items:[
   {k:'sermon', label:'설교 본문 · 제목 · 말씀 후 찬양', owner:'지도목사', due:'금 18:00', done:true, fields:['본문','제목','말씀 후 찬양'], vals:['요한복음 15:1-8','붙어 있으라','주님 다시 오실 때까지'], value:'본문 요한복음 15:1-8\n제목 붙어 있으라\n말씀 후 찬양 주님 다시 오실 때까지'},
-  {k:'conti',  label:'찬양 콘티 · 악보', owner:'예배국장', who:'예배국장', due:'금 18:00', done:false, value:'', helper:'https://claude.ai/artifact/UKBLJZsgJ4FbCWSrPXRMgx'},
+  {k:'conti',  label:'찬양 콘티 · 악보', owner:'예배국장', who:'예배국장', due:'금 18:00', done:false, value:'', helper:'https://sein-songlist.netlify.app/'},
   {k:'share',  label:'나눔 질문', owner:'지도목사', due:'금 18:00', done:false, value:''},
   {k:'duty',   label:'대표기도 · 헌금위원 · 청소셀', owner:'목양국장', who:'목양국장', due:'금 18:00', done:true, value:'대표기도 소망셀 셀리더 · 헌금위원 은혜셀 · 청소 은혜셀 + 소망셀'},
   {k:'send',   label:'새가족 셀 파송', owner:'팀장', who:'새가족팀장', due:'금 18:00', done:true, value:'이번 주 없음'},
@@ -4196,10 +4196,11 @@ const memberLine = t => { if (!t.member) return ''; const g = memberTag(t.member
 function taskDoer(id){ const t = TASKS.find(x => x.id === id); if (!t) return; const dept = deptOfRole(t.owner), tm = dept ? Object.values(DEPTS[dept].teams).flat().filter(m => m.n).map(m => [m.n, `${dept} 팀원${m.role ? ' · ' + m.role : ''}`]) : [], seen = new Set(tm.map(x => x[0])), src = [...tm, ...PEOPLE().filter(x => !seen.has(x[0]))];
   modal(`<div class="head"><div><small>할 일 · 실무자 정하기 · 담당 ${esc(t.owner)}${t.doer ? ` (${esc(t.doer)})` : ''}</small><h3>${esc(t.title)}</h3><small>${esc(t.ev || '')} · ${md(t.due)}</small></div><button class="x" onclick="closeModal()">×</button></div>
   <div class="cont"><form class="form" id="tdf"><label>실제로 하는 사람 ${pick('td_n', {src, val:t.member || '', ph:'이름을 치고 고르세요 — 팀원 · 셀리더 · 청년', label:'실무자'})}</label>
-  <p class="note" style="margin:0">명단에 없는 사람도 적을 수 있습니다. 정하면 이 줄에 이름이 붙어 누가 하는지 모두 봅니다. 완료 체크와 책임은 그대로 담당(${esc(t.owner)})에게 있습니다.${t.doer ? ` 같은 "${esc(t.doer)}" 줄 가운데 비어 있는 줄에도 같이 붙습니다.` : ''}</p>
+  <p class="note" style="margin:0">명단에 없는 사람도 적을 수 있습니다. 정하면 이 줄에 이름이 붙어 누가 하는지 모두 봅니다. 완료 체크와 책임은 그대로 담당(${esc(t.owner)})에게 있습니다.</p>${(() => { const E = sameDoer(t).filter(x => !x.member), M = t.member ? sameDoer(t).filter(x => x.member === t.member) : [], ne = L => new Set(L.map(x => x.ev)).size, ev = L => ne(L) > 1 ? ` · 사역 ${ne(L)}개에 걸침` : '';
+    return (E.length ? `<label class="lgkeep" style="margin:0"><input type="checkbox" id="td_all"><span>같은 "${esc(t.doer)}" 줄 중 비어 있는 ${E.length}개에도 붙이기${ev(E)}</span></label>` : '') + (M.length ? `<label class="lgkeep" style="margin:0"><input type="checkbox" id="td_clrall"><span>비울 때 — ${esc(t.member)}이(가) 붙은 같은 "${esc(t.doer)}" 줄 ${M.length}개도${ev(M)}</span></label>` : ''); })()}
   <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn p">정하기</button>${t.member ? `<button type="button" class="btn" id="td_clear">비우기</button>` : ''}<button type="button" class="btn ghost" onclick="closeModal()">닫기</button></div></form></div>`, () => {
-    document.getElementById('tdf').onsubmit = ev => { ev.preventDefault(); const w = document.querySelector('#tdf .pk'), v = pkVals(w)[0] || w.querySelector('.pki').value.trim(); if (!v) { toast('이름을 적어 주세요'); return; } closeModal(); taskMember(id, v); toast(`${v}${memberTag(v) ? ' (' + memberTag(v) + ')' : ''} — 실무자로 붙였습니다`); };
-    const c = document.getElementById('td_clear'); if (c) c.onclick = () => { closeModal(); taskMember(id, ''); };
+    document.getElementById('tdf').onsubmit = ev => { ev.preventDefault(); const w = document.querySelector('#tdf .pk'), v = pkVals(w)[0] || w.querySelector('.pki').value.trim(); if (!v) { toast('이름을 적어 주세요'); return; } const all = (document.getElementById('td_all') || {}).checked; closeModal(); taskMember(id, v, all); if (!all) toast(`${v}${memberTag(v) ? ' (' + memberTag(v) + ')' : ''} — 이 줄의 실무자로 붙였습니다`); };
+    const c = document.getElementById('td_clear'); if (c) c.onclick = () => { const all = (document.getElementById('td_clrall') || {}).checked; closeModal(); taskMember(id, '', all); };
     const i = document.querySelector('#tdf .pki'); if (i) i.focus(); }); }
 
 /* 3) 인수인계 ④ — 다락방이 모르는 것(카드 · 권한 · 계정 · 물건). 회장 11-20: 추천대로 한 묶음 더함. 자리마다 1 ~ 3줄 */
@@ -5057,7 +5058,9 @@ function pick(id, o){ o = o || {}; const src = o.src || PEOPLE(), sep = o.sep ||
   return `<span class="pk" data-sep="${sep}" ${o.multi ? 'data-multi="1"' : ''} ${o.strict ? 'data-strict="1"' : ''} data-free="${esc((o.free || []).join('|'))}" ${o.on ? `data-on="${esc(o.on)}"` : ''} onclick="if(event.target===this)this.querySelector('.pki').focus()"><input type="hidden" ${id ? `id="${id}"` : ''} class="pkv ${o.cls || ''}" value="${esc(vals.join(sep))}"><span class="pkc">${pkChips(vals, known)}</span><input class="pki" list="${dl}" placeholder="${esc(o.ph || '이름을 치고 고르세요')}" autocomplete="off" aria-label="${esc(o.label || '이름')}" oninput="pkIn(this,event)" onchange="const el=this;setTimeout(()=>pkAdd(el),150)" onkeydown="if(event.isComposing)return;if(event.key==='Enter'||event.key===','){event.preventDefault();pkAdd(this)}else if(event.key==='Backspace'&&!this.value)pkPop(this)"><datalist id="${dl}">${src.map(([n, l]) => `<option value="${esc(n)}">${esc(l || '')}</option>`).join('')}${(o.free || []).map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist><small class="pkw" ${w ? '' : 'hidden'}>${esc(w)}</small></span>`; }
 const pkKnown = w => [...w.querySelectorAll('datalist option')].map(o => o.value), pkVals = w => [...w.querySelectorAll('.pkchip')].map(c => c.dataset.v);
 function pkSet(w, vals){ const known = pkKnown(w), n = w.querySelector('.pkw'), t = pkWarn(vals, known); w.querySelector('.pkc').innerHTML = pkChips(vals, known); w.querySelector('.pkv').value = vals.join(w.dataset.sep); n.hidden = !t; n.textContent = t; if (w.dataset.on) new Function(w.dataset.on)(); }
-function pkIn(inp, ev){ if (ev.inputType === 'insertReplacementText' || (!ev.inputType && pkKnown(inp.closest('.pk')).includes(inp.value.trim()))) pkAdd(inp); }   // 목록에서 고른 순간 바로 넣음(타이핑 중에는 안 넣음)
+function pkExact(inp){ const w = inp.closest('.pk'); if (!w) return; const v = inp.value.trim(), known = pkKnown(w); if (v && known.includes(v) && !known.some(k => k !== v && k.startsWith(v))) pkAdd(inp); }   // v102 — 이름을 끝까지 쳤으면(한글 조합이 끝나면 · 붙여 넣으면) 명단의 이름과 똑같을 때 바로 넣음. 더 긴 이름의 앞부분이면 기다림
+document.addEventListener('compositionend', e => { const t = e.target; if (t && t.classList && t.classList.contains('pki')) pkExact(t); }, true);   // compositionend는 on- 속성이 없어 문서에 한 번 붙임
+function pkIn(inp, ev){ if (ev.inputType === 'insertFromPaste') { pkExact(inp); return; } if (ev.inputType === 'insertReplacementText' || (!ev.inputType && pkKnown(inp.closest('.pk')).includes(inp.value.trim()))) pkAdd(inp); }   // 목록에서 고른 순간 바로 넣음(타이핑 중에는 안 넣음)
 function pkAdd(inp){ if (!inp.isConnected) return; const w = inp.closest('.pk'), known = pkKnown(w), add = inp.value.split(/[,，、\n]/).map(x => x.trim()).filter(Boolean); if (!add.length) return; let vals = pkVals(w); const bad = add.filter(a => !known.includes(a)), free = (w.dataset.free || '').split('|');
   if (w.dataset.strict && bad.length) { toast(`명단에 없는 이름입니다 — ${bad.join(', ')}. 목록에서 골라 주세요`); inp.select(); return; }
   add.forEach(a => { if (!w.dataset.multi) vals = [a]; else if (!vals.includes(a) || free.includes(a)) vals.push(a); }); inp.value = ''; pkSet(w, vals); }
@@ -7337,9 +7340,10 @@ function taskReown(id){ const t = TASKS.find(x => x.id === id); if (!t || t.ckr 
       t.chg = {std, why:w.value, by:S.role, name:S.name, at:TODAYISO}; t.owner = o; delete t.doer; delete t.member; t.added = {by:S.role, name:S.name, at:TODAYISO, ack:[], moved:true};
       log('할 일', '담당 바꾸기', `${t.title} · ${std} → ${o} · ${w.value}`); closeModal(); render(); toast(`${o}에게 넘겼습니다 — '바꾼 기록'에 남고, ${o} 화면에 새 일로 뜹니다`); }; }); }
 /* 담당 임원이 실무자 이름을 적어 둠(v96 — 팀원뿐 아니라 셀리더 · 청년 · 그 밖도: taskDoer). 괄호 담당 줄(노방전도 담당 · 군선교 담당 …)은 같은 담당의 남은 줄에 한 번에 */
-function taskMember(id, v){ const t = TASKS.find(x => x.id === id); if (!t) return; t.member = v || undefined; let n = 0;
-  if (t.doer && v) TASKS.forEach(x => { if (x !== t && x.owner === t.owner && x.doer === t.doer && !x.member && x.status !== '완료') { x.member = v; n++; } });
-  log('국 · 팀', '할 일 팀원', (v || '해제') + (n ? ` · ${t.doer} 줄 ${n + 1}개` : '')); render(); if (n) toast(`${t.doer} 줄 ${n + 1}개에 ${v} — 줄마다 따로 바꿀 수 있습니다`); }
+const sameDoer = t => t.doer ? TASKS.filter(x => x !== t && x.owner === t.owner && x.doer === t.doer && x.status !== '완료') : [];   // 같은 담당 · 같은 자리(괄호) 줄 — 매월 노방전도처럼 여러 사역에 걸침
+function taskMember(id, v, all){ const t = TASKS.find(x => x.id === id); if (!t) return; const was = t.member; t.member = v || undefined; let n = 0;   // v102 — 기본은 이 줄만(회장 11-23). all = 같은 자리 줄에도(붙이기는 빈 줄에만 · 비우기는 같은 이름 줄만)
+  if (all) sameDoer(t).forEach(x => { if (v ? !x.member : was && x.member === was) { x.member = v || undefined; n++; } });
+  log('국 · 팀', '할 일 팀원', (v || '해제') + (n ? ` · ${t.doer} 줄 ${n + 1}개` : '')); render(); if (n) toast(`${t.doer} 줄 ${n + 1}개${v ? `에 ${v}` : ' 비움'} — 줄마다 따로 바꿀 수 있습니다`); else if (!v) toast('실무자를 비웠습니다'); }
 function chgView(){ const L = TASKS.filter(t => t.chg).sort((a, b) => a.due.localeCompare(b.due)), cnt = {}; L.forEach(t => { if (t.chg.why === '이쪽이 더 맞음') cnt[t.ck] = (cnt[t.ck] || 0) + 1; }); const hot = Object.entries(cnt).filter(([, n]) => n > 2);
   modal(`<div class="head"><div><small>할 일 · 바꾼 기록</small><h3>기준과 다르게 맡은 줄 ${L.length}</h3><small>'이쪽이 더 맞음'이 같은 성격에서 2번을 넘으면 결산회의에서 담당 기준을 고칩니다. 연중에는 기준을 고치지 않습니다.</small></div><button class="x" onclick="closeModal()">×</button></div>
   <div class="cont" id="chgv"><style>.modal .box{width:min(820px,100%)}</style>${hot.length ? `<div class="callout" style="margin:0 0 10px">결산회의에서 볼 성격 — ${hot.map(([k, n]) => `<b>${esc(k)}</b> ${n}번`).join(' · ')}</div>` : ''}
@@ -8393,14 +8397,16 @@ CODEC.로그 = {key:null, local:true, dec:R => LOG.splice(0, LOG.length, ...R.sl
 const CVLOCAL = ['체크리스트틀', '담당기준', '담당예외', '직책설명', '장소', '사용자', '설정', '로그', '연간요약', '국매뉴얼', '개선과제', '항목표', '월마감', '결산', '예배일지'];
 
 /* ---------- ③ SRV — 서버와 주고받기. SRV.url이 비면(시험판 · 게시본) 아무것도 하지 않음 ---------- */
-const SRV = {url:'https://script.google.com/macros/s/AKfycbwWtGi7KaPkrkP01rz4Hfvqk_Hb5CTgm-HgNT2qvvoUiNra1kYrrLC73xhEiGBsJEk/exec', state:'off', tok:null, user:null, base:null, ready:false, busy:false, again:false, dirty:false, t:0, at:'', err:'', bad:[], users:null, loadedAt:0, loading:false};
+const SRV = {url:'https://script.google.com/macros/s/AKfycbwWtGi7KaPkrkP01rz4Hfvqk_Hb5CTgm-HgNT2qvvoUiNra1kYrrLC73xhEiGBsJEk/exec', state:'off', tok:null, user:null, base:null, ready:false, busy:false, again:false, dirty:false, t:0, at:'', err:'', bad:[], users:null, loadedAt:0, loading:false, ver:{}, ms:{}};
 SRV.on = /^https?:\/\//.test(SRV.url);
 const SRVTK = 'sein_srv_tok';
 function srvTokGet(){ try { return localStorage.getItem(SRVTK) || sessionStorage.getItem(SRVTK); } catch (e) { return null; } }
 function srvTokSet(t, keep){ try { localStorage.removeItem(SRVTK); sessionStorage.removeItem(SRVTK); if (t) (keep ? localStorage : sessionStorage).setItem(SRVTK, t); } catch (e) {} }
 async function api(a, p){
-  let j; try { const r = await fetch(SRV.url, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(Object.assign({a}, SRV.tok ? {token:SRV.tok} : {}, p || {})), cache:'no-store', redirect:'follow'}); j = await r.json(); }
+  let j; const t0 = performance.now(); try { const r = await fetch(SRV.url, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(Object.assign({a}, SRV.tok ? {token:SRV.tok} : {}, p || {})), cache:'no-store', redirect:'follow'}); j = await r.json(); }
   catch (e) { j = null; }
+  if (j && j.ok && ['login', 'load', 'write', 'merge', 'ver'].includes(a)) SRV.ms[a] = Math.round(performance.now() - t0);   // 걸린 시간(왼쪽 아래에 보임)
+  if (j && j.ok && j.ver && j.ver.f) srvVer(j.ver);
   if (!j || typeof j !== 'object') j = {ok:false, error:'서버에 닿지 않습니다 — 인터넷 연결을 확인해 주세요', code:'net'};
   if (!j.ok && j.code === 'auth' && a !== 'login' && /다시 로그인/.test(j.error || '')) srvGone('로그인이 끝났습니다 — 다시 로그인해 주세요');
   return j;
@@ -8409,7 +8415,8 @@ function srvGone(msg){ SRV.leaving = true; srvTokSet(null); SRV.tok = null; S.ro
 /* 서버의 자리 → 다락방의 S */
 function srvSeat(u){ const rk = u.rk || u.role; if (rk === '관리자') return {role:'마스터', name:'관리자', cell:null, team:null};
   if (rk === '셀리더') return {role:'셀리더', name:u.name, cell:u.seat, team:null}; if (u.role === '팀장') return {role:'팀장', name:u.name, cell:null, team:rk}; return {role:rk, name:u.name, cell:null, team:null}; }
-const srvMyKey = () => myKey() || S.role;   // 조사 응답 · 알림 읽음의 내 몫 열쇠(서버의 seatKey와 같음)
+const srvMyKey = () => myKey() || S.role;
+function srvVer(v){ if (SRV.ver[v.f] === v.old) SRV.ver[v.f] = v.v; }   // 내가 쓴 것만 바뀌었으면 다시 받지 않음   // 조사 응답 · 알림 읽음의 내 몫 열쇠(서버의 seatKey와 같음)
 
 /* 받은 탭을 다락방 자료에 얹음 */
 const CVORDER = ['조직', '셀편성', '교적부', '사역DB', '할일', '청구', '연간일정', '문서', '조사', '승인', '상태변경', '인수인계', '알림', '공지', 'QA', '교육이력', '국팀', '매뉴얼제안', '상시사역로그', '주간', '기도제목', '새가족명부', '새가족심방', '돌봄', '보관함', '심방일지', '장부', '수입', '영수증', '재원변경', '예산조정', '회비현황', '주일예배', '로그'];
@@ -8483,35 +8490,41 @@ async function srvSync(){
 const srvPending = () => { if (!SRV.ready || !SRV.base) return false; const cur = srvEnc(); return SYNC.some(t => srvDiff(t, cur[t], SRV.base[t]).n); };
 
 /* 불러오기 — 처음 · 새로 고침(돌아왔을 때 · 5분마다) */
-async function srvLoad(){ if (SRV.loading) return false; SRV.loading = true; srvPill();
-  try { if (SRV.ready) { await srvSync(); if (SRV.err) return false; }
-    const j = await api('load'); if (!j.ok) { SRV.err = j.error || '불러오지 못했습니다'; if (SRV.state !== 'in') { SRV.state = 'fail'; srvView(); } else toast(SRV.err); return false; }
+async function srvLoad(o){ o = o || {}; if (SRV.loading) return false; SRV.loading = true; srvPill();
+  try { if (SRV.ready && !o.data) { await srvSync(); if (SRV.err) return false; }
+    const j = o.data || await api('load', o.files ? {files:o.files} : {}); if (!j.ok) { SRV.err = j.error || '불러오지 못했습니다'; if (SRV.state !== 'in') { SRV.state = 'fail'; srvView(); } else toast(SRV.err); return false; }
     SRV.user = j.user; const me = srvSeat(j.user); S.role = me.role; S.name = me.name; S.cell = me.cell; S.team = me.team; S.year = THIS_YEAR + 1; S.arch = null; save();
-    SRV.ready = false; yearSwap(); srvApply(j.tabs || {}); SRV.state = 'in'; SRV.loadedAt = Date.now(); SRV.err = '';
+    SRV.ready = false; yearSwap(); srvApply(j.tabs || {}); SRV.state = 'in'; SRV.loadedAt = Date.now(); SRV.err = ''; (j.files || Object.keys(j.ver || {})).forEach(f => { if (j.ver && j.ver[f]) SRV.ver[f] = j.ver[f]; });
     _render0(); SRV.base = srvEnc(); SRV.ready = true; SRV.at = new Date().toTimeString().slice(0, 5);
     if (SRV.bad.length) toast('시트 머리줄이 설계와 다른 탭: ' + SRV.bad.join(' · ') + ' — 관리자 확인');
     return true; }
   finally { SRV.loading = false; srvPill(); } }
 async function srvBoot(){ SRV.state = 'boot'; SRV.tok = srvTokGet(); S.role = null; S.name = null;
   let msg = null; try { msg = sessionStorage.getItem('sein_srv_msg'); sessionStorage.removeItem('sein_srv_msg'); } catch (e) {}
-  if (!SRV.tok) { SRV.state = 'out'; render(); if (msg) toast(msg); return; }
+  if (!SRV.tok) { SRV.state = 'out'; render(); if (msg) toast(msg); api('ping'); return; }   // 로그인 화면이 뜨면 서버를 미리 깨움(쉬던 서버는 첫 요청이 1 ~ 2초 늦음) — 비밀번호를 치는 동안
   srvView(); const ok = await srvLoad(); if (ok) { if (!location.hash || location.hash === '#login' || location.hash === '#home') go(homeDoor()); setTimeout(popups, 350); } }
-function srvView(){ const p = document.getElementById('page'); if (!p) return;
+const srvUnveil = () => { const v = document.getElementById('srvpre'); if (v) v.remove(); };
+function srvView(){ const p = document.getElementById('page'); if (!p) return; srvUnveil();
   p.innerHTML = SRV.state === 'fail' ? `<div class="lock"><div class="ic">⚠︎</div><h2>불러오지 못했습니다</h2><p class="note">${esc(SRV.err || '')}</p><div class="row"><button class="btn p" onclick="srvBoot()">다시</button><button class="btn" onclick="srvGone('나갔습니다')">로그인 화면으로</button></div></div>`
     : `<div class="lock srvload"><div class="ic">⏳︎</div><h2>불러오는 중…</h2><p class="note">시트에서 올해 자료를 가져옵니다</p></div>`; }
 async function srvLogin(role, seat, pw, keep){ if (SRV.loading) return; const btn = document.querySelector('#loginf .btn.p, #mlf .btn.p'); if (btn) btn.disabled = true;
-  const j = await api('login', {role, seat, pw, keep}); if (btn) btn.disabled = false;
+  if (btn) btn.textContent = '들어가는 중…'; const j = await api('login', {role, seat, pw, keep, load:true}); if (btn) { btn.disabled = false; btn.textContent = role === '관리자' ? '들어가기' : '로그인'; }
   if (!j.ok) { toast(j.error || '로그인하지 못했습니다'); return; }
   SRV.tok = j.token; srvTokSet(j.token, keep && role !== '관리자'); S.keep = keep; closeModal(); SRV.state = 'boot'; srvView();
-  const ok = await srvLoad(); if (!ok) return; DISMISS.clear(); V2.tscope = null; V2.tperson = null; V2.ttype = null; V2.inboxAll = false; V2.monthOpen = false;
+  const ok = await srvLoad(j.data ? {data:j.data} : {}); if (!ok) return; DISMISS.clear(); V2.tscope = null; V2.tperson = null; V2.ttype = null; V2.inboxAll = false; V2.monthOpen = false;
   go(homeDoor()); setTimeout(popups, 350); log('로그인', '들어옴', S.name || S.role);
   toast(`${S.name} · ${S.role === '마스터' ? '관리자' : S.role}${S.cell ? ' (' + S.cell + ')' : S.team ? ' (' + S.team + ')' : ''}로 로그인했습니다`);
   if (j.temp) setTimeout(() => toast('처음 받은 비밀번호입니다 — 메뉴 아래 "비밀번호 바꾸기"에서 바꿔 주세요'), 3200); }
 
+/* 20초마다 '바뀜 표'만 물어보고, 다른 사람이 바꾼 파일만 다시 받음 */
+async function srvPoll(){ if (!srvIdle() || document.visibilityState !== 'visible') return; const j = await api('ver'); if (!j.ok || !j.ver) return;
+  const ch = Object.keys(j.ver).filter(f => SRV.ver[f] !== j.ver[f]); if (ch.length && srvIdle()) srvLoad({files:ch}); }
+const srvIdle = () => SRV.state === 'in' && SRV.ready && !SRV.busy && !SRV.loading && !SRV.dirty && !modalDirty() && !(document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName));
 /* 화면 오른쪽 아래 작은 표 — 저장 상태. 누르면 새로 불러옴 */
 function srvPill(){ if (!SRV.on) return; let el = document.getElementById('srvst'); if (!el) { el = document.createElement('button'); el.id = 'srvst'; el.type = 'button'; el.className = 'srvst'; el.onclick = () => { if (SRV.state === 'in') srvLoad().then(ok => ok && toast('시트에서 새로 불러왔습니다')); }; document.body.appendChild(el); }
   el.hidden = SRV.state !== 'in'; const [cls, l, t] = SRV.loading ? ['', '불러오는 중…', ''] : SRV.busy ? ['', '저장 중…', ''] : SRV.err ? ['warn', '저장 대기', SRV.err] : ['ok', '저장됨', SRV.at || ''];
-  el.className = 'srvst ' + cls; el.innerHTML = `<span class="l">${esc(l)}</span>${t ? ` <span class="t">${esc(t)}</span>` : ''}`; el.title = (SRV.err ? SRV.err + ' — ' : '') + '누르면 시트에서 새로 불러옵니다'; el.setAttribute('aria-label', l + ' ' + t); }
+  el.className = 'srvst ' + cls; el.innerHTML = `<span class="l">${esc(l)}</span>${t ? ` <span class="t">${esc(t)}</span>` : ''}`; el.title = (SRV.err ? SRV.err + ' — ' : '') + '누르면 시트에서 새로 불러옵니다'; el.setAttribute('aria-label', l + ' ' + t);
+  const f = document.querySelector('.sbfoot'); if (f) { let m = document.getElementById('srvms'); if (!m) { m = document.createElement('div'); m.id = 'srvms'; m.className = 'note'; m.style.cssText = 'font-size:11px;margin-top:4px'; f.appendChild(m); } const sec = k => SRV.ms[k] === undefined ? '—' : (SRV.ms[k] / 1000).toFixed(1) + '초'; m.textContent = SRV.state === 'in' ? `서버 응답 · 로그인 ${sec('login')} · 불러오기 ${sec('load')} · 저장 ${sec(SRV.ms.write === undefined ? 'merge' : 'write')}` : ''; } }
 
 /* 다락방 쪽 갈아 끼우기 — 서버가 있을 때만 */
 const _render0 = render;
@@ -8536,16 +8549,16 @@ body.srv #ynote .btn{display:none}
     if (SRV.state === 'boot' || SRV.state === 'fail') { srvView(); return; }
     if (!S.role && location.hash !== '#login') { history.replaceState(null, '', '#login'); }
     if (S.role) { S.year = THIS_YEAR + 1; S.arch = null; }
-    _render0();
+    _render0(); srvUnveil();
     srvAfter();
     if (SRV.ready) { SRV.dirty = true; clearTimeout(SRV.t); SRV.t = setTimeout(srvSync, 700); }
     srvPill(); };
   window.addEventListener('beforeunload', e => { if (!SRV.leaving && SRV.state === 'in' && SRV.ready) if (SRV.busy || (SRV.dirty && srvPending())) { e.preventDefault(); e.returnValue = ''; } });
-  const idle = () => SRV.state === 'in' && !SRV.busy && !SRV.loading && !document.querySelector('#modal .box') && !(document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName));
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && idle() && Date.now() - SRV.loadedAt > 60000) srvLoad(); });
-  setInterval(() => { if (document.visibilityState === 'visible' && idle() && Date.now() - SRV.loadedAt > 300000) srvLoad(); }, 30000);
-  logout = function(){ const go_ = () => { SRV.leaving = true; srvTokSet(null); SRV.tok = null; S.role = null; S.name = null; save(); try { sessionStorage.setItem('sein_srv_msg', '나갔습니다'); } catch (e) {} location.reload(); };
-    const t = setTimeout(go_, 3000); (SRV.ready && srvPending() ? srvSync() : Promise.resolve()).then(() => api('logout')).then(() => { clearTimeout(t); go_(); }); };
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') srvPoll(); });
+  setInterval(srvPoll, 20000);
+  logout = function(){ const tok = SRV.tok, go_ = () => { try { fetch(SRV.url, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({a:'logout', token:tok}), keepalive:true}); } catch (e) {}   // 서버의 세션 지우기는 보내 두고 기다리지 않음
+      SRV.leaving = true; srvTokSet(null); SRV.tok = null; S.role = null; S.name = null; save(); try { sessionStorage.setItem('sein_srv_msg', '나갔습니다'); } catch (e) {} location.reload(); };
+    if (SRV.ready && srvPending()) { toast('저장하고 나갑니다…'); const t = setTimeout(go_, 6000); srvSync().then(() => { clearTimeout(t); go_(); }); } else go_(); };
   masterLogin = function(){
     modal(`<div class="head"><div><small>관리자 · 별도 직책</small><h3>관리자 로그인</h3></div><button class="x" onclick="closeModal()">×</button></div>
     <div class="cont"><form class="form" id="mlf"><label>관리자 비밀번호 <input id="mpw" type="password" autocomplete="current-password"></label><button class="btn p">들어가기</button></form><p class="note" style="margin-top:8px">관리자 세션은 2시간 — 로그인 유지는 없습니다.</p></div>`, () => {
@@ -8588,6 +8601,10 @@ CHANGELOG.unshift(['2026-11-23', '', '서버 연결 준비 — 시트와 주고�
   '들어오면 시트에서 올해 자료를 불러오고, 바꾼 것은 잠깐 뒤 시트에 저장합니다. 오른쪽 아래 작은 표에 "저장됨 · 저장 중 · 저장 대기"가 보이고, 누르면 새로 불러옵니다',
   '다른 사람이 같은 때 같은 번호를 쓰면 서버가 새 번호를 주고, 다락방도 그 번호로 바꿉니다',
   '비밀번호 바꾸기 · 관리자의 비밀번호 새로 내기 · 잠금 풀기도 서버에서 합니다',
+  '다른 사람이 바꾼 것은 20초 안에 저절로 보입니다(바뀐 파일만 다시 받음) · 로그인과 불러오기를 한 번에 · 나가기는 기다리지 않음',
+  '실무자 — 한 줄에 정하면 그 줄만 바뀝니다. 같은 자리 줄에 같이 붙이기 · 같이 비우기는 체크할 때만(줄 수 · 사역 수를 보여 줌)',
+  '이름 고르기 — 이름을 끝까지 친 뒤 목록에서 골라도 바로 이름표로 들어갑니다',
+  '주일 예배의 "콘티 도우미" 단추가 새 콘티 도우미(sein-songlist)로 열립니다',
   '아직 안 되는 것 — 지우기, 영수증 사진 올리기, 심방일지 쓰기(읽기만), 조직 · 사용자 바꾸기(시트에서)']]);
 
 autoBdayNotice();
