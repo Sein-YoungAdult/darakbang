@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><style id="srvpre">.app,.tabbar{visibility:hidden}</style><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}img{max-width:100%}</style>
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src https://script.google.com https://script.googleusercontent.com ; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; manifest-src 'none'"><style id="srvpre">.app,.tabbar{visibility:hidden}</style><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}img{max-width:100%}</style>
 <title>세인 1청년부 다락방</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&family=Noto+Serif+KR:wght@500;700&display=swap">
@@ -2654,7 +2654,7 @@ const DATA = JSON.parse(JSON.stringify({
 /* ================================================================ 날짜 · 도우미 */
 const TODAY = new Date(2026, 9, 30);              // 시제품 기준일 (금)
 const DOW = ['일','월','화','수','목','금','토'];
-const pd = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const pd = s => { const [y,m,d] = String(s || '').split('-').map(Number); return new Date(y, m-1, d); };   // v102 — 빈 값이면 '날짜 아님'(멈추지 않음)
 const days = s => Math.round((pd(s) - TODAY) / 864e5);
 const cueTxt = s => String(s || '').replace(/■\s*(?=실시)/g, '').replace(/■\s*/g, '실시 ').replace(/□\s*(?=준비)/g, '').replace(/□\s*/g, '준비 ').replace(/◆\s*/g, '마감: ');   // 계획표 밖에서는 기호 대신 말로
 const dday = s => { const t = days(s); return t === 0 ? '오늘' : t > 0 ? `D-${t}` : `${-t}일 지남`; };
@@ -2852,7 +2852,7 @@ const lastWeek = () => TODAY.getDate() > new Date(TODAY.getFullYear(), TODAY.get
 const ALERT_RULE = {weekDue:4, absentWeeks:3, surveyDays:1, budgetPct:80, visitDays:14, receiptDays:0};
 const OTHERS_MAX = 12;   // 회장 · 총무 · 목사 · 부장의 '지금 할 것'에 남의 지연 · 막힘을 한 줄씩 보이는 한도 — 넘으면 담당별 한 줄
 const weekDue = () => ck27On() ? Math.max(8, ALERT_RULE.weekDue) : ALERT_RULE.weekDue;   // v88 — 체크리스트가 들어온 해는 7일 안 마감 4개가 보통(직책 절반이 40% 넘는 날). 8개부터 '쌓임'
-const visitLate = () => VISITS.filter(v => v.status !== '종결' && days(v.next) <= -ALERT_RULE.visitDays);   // v85 — 종결한 건은 세지 않음
+const visitLate = () => VISITS.filter(v => v.status !== '종결' && v.next && days(v.next) <= -ALERT_RULE.visitDays);   // v85 — 종결한 건은 세지 않음
 function alerts(){ if (!S.role || S.role === '마스터') return []; const A = [], T = tier(), all = isBoss() || T === 0, dept = deptOfRole(S.role), cell = myCell();
   const inScope = t => all || isMine(t) || (dept && (EVENTS.find(e => e.name === t.ev) || {}).dept === dept);
   const evScope = e => all || (dept && e.dept === dept) || e.owner === S.role;
@@ -3046,7 +3046,7 @@ const PRAY = [
   {d:'2026-10-25', c:'은혜셀', n:'이서아', text:'가족 건강'},
   {d:'2026-09-20', c:'소망셀', n:'한지우', text:'논문 주제 확정'}, {d:'2026-10-25', c:'소망셀', n:'한지우', text:'졸업 논문'}, {d:'2026-10-25', c:'소망셀', n:'서준혁', text:'군 입대 준비 (12월)'}, {d:'2026-10-25', c:'소망셀', n:'홍서진', text:'새 직장'}, {d:'2026-10-25', c:'소망셀', n:'문가은', text:'동생 신앙'},
   {d:'2026-10-25', c:'믿음셀', n:'조은우', text:'건강 회복'}, {d:'2026-10-25', c:'믿음셀', n:'표세아', text:'선교 훈련 지원'}, {d:'2026-10-25', c:'믿음셀', n:'석지원', text:'가정 평안'}];
-const mdS = iso => `${+iso.slice(5, 7)}/${+iso.slice(8, 10)}`;
+const mdS = iso => { iso = String(iso || ''); return `${+iso.slice(5, 7)}/${+iso.slice(8, 10)}`; };   // v102 — 빈 값에도 멈추지 않음
 const prayOf = n => PRAY.filter(p => p.n === n).sort((a, b) => a.d.localeCompare(b.d));
 const prayLog = n => { const rows = prayOf(n), out = []; rows.forEach(p => { const last = out[out.length - 1]; if (last && last.d === p.d) last.text += ' / ' + p.text; else out.push({d:p.d, text:p.text}); }); return out.map(x => mdS(x.d) + ' ' + x.text); };
 /* 셀원 카드 '기도제목 흐름' — 기간 선택 (이번 달 · 최근 3개월 · 전체 · 특정 달). 본인 셀만, 목양국장 · 1층은 전체 */
@@ -5057,7 +5057,7 @@ const pkWarn = (vals, known) => { const off = vals.filter(v => !known.includes(v
 function pick(id, o){ o = o || {}; const src = o.src || PEOPLE(), sep = o.sep || ', ', dl = 'pkd' + (++PKN), vals = pkSplit(o.val), known = src.map(x => x[0]).concat(o.free || []), w = pkWarn(vals, known);
   return `<span class="pk" data-sep="${sep}" ${o.multi ? 'data-multi="1"' : ''} ${o.strict ? 'data-strict="1"' : ''} data-free="${esc((o.free || []).join('|'))}" ${o.on ? `data-on="${esc(o.on)}"` : ''} onclick="if(event.target===this)this.querySelector('.pki').focus()"><input type="hidden" ${id ? `id="${id}"` : ''} class="pkv ${o.cls || ''}" value="${esc(vals.join(sep))}"><span class="pkc">${pkChips(vals, known)}</span><input class="pki" list="${dl}" placeholder="${esc(o.ph || '이름을 치고 고르세요')}" autocomplete="off" aria-label="${esc(o.label || '이름')}" oninput="pkIn(this,event)" onchange="const el=this;setTimeout(()=>pkAdd(el),150)" onkeydown="if(event.isComposing)return;if(event.key==='Enter'||event.key===','){event.preventDefault();pkAdd(this)}else if(event.key==='Backspace'&&!this.value)pkPop(this)"><datalist id="${dl}">${src.map(([n, l]) => `<option value="${esc(n)}">${esc(l || '')}</option>`).join('')}${(o.free || []).map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist><small class="pkw" ${w ? '' : 'hidden'}>${esc(w)}</small></span>`; }
 const pkKnown = w => [...w.querySelectorAll('datalist option')].map(o => o.value), pkVals = w => [...w.querySelectorAll('.pkchip')].map(c => c.dataset.v);
-function pkSet(w, vals){ const known = pkKnown(w), n = w.querySelector('.pkw'), t = pkWarn(vals, known); w.querySelector('.pkc').innerHTML = pkChips(vals, known); w.querySelector('.pkv').value = vals.join(w.dataset.sep); n.hidden = !t; n.textContent = t; if (w.dataset.on) new Function(w.dataset.on)(); }
+function pkSet(w, vals){ const known = pkKnown(w), n = w.querySelector('.pkw'), t = pkWarn(vals, known); w.querySelector('.pkc').innerHTML = pkChips(vals, known); w.querySelector('.pkv').value = vals.join(w.dataset.sep); n.hidden = !t; n.textContent = t; if (w.dataset.on) { const f = /^([A-Za-z_$][\w$]*)\(\)$/.exec(w.dataset.on); if (f && typeof window[f[1]] === 'function') window[f[1]](); } }
 function pkExact(inp){ const w = inp.closest('.pk'); if (!w) return; const v = inp.value.trim(), known = pkKnown(w); if (v && known.includes(v) && !known.some(k => k !== v && k.startsWith(v))) pkAdd(inp); }   // v102 — 이름을 끝까지 쳤으면(한글 조합이 끝나면 · 붙여 넣으면) 명단의 이름과 똑같을 때 바로 넣음. 더 긴 이름의 앞부분이면 기다림
 document.addEventListener('compositionend', e => { const t = e.target; if (t && t.classList && t.classList.contains('pki')) pkExact(t); }, true);   // compositionend는 on- 속성이 없어 문서에 한 번 붙임
 function pkIn(inp, ev){ if (ev.inputType === 'insertFromPaste') { pkExact(inp); return; } if (ev.inputType === 'insertReplacementText' || (!ev.inputType && pkKnown(inp.closest('.pk')).includes(inp.value.trim()))) pkAdd(inp); }   // 목록에서 고른 순간 바로 넣음(타이핑 중에는 안 넣음)
@@ -8325,15 +8325,25 @@ function sheetTabs(lite){
 function sheetMap(){ const o = {}; Object.entries(sheetTabs(true).files).forEach(([f, tabs]) => tabs.forEach(t => { const cols = t.cols.map(c => c.split('|')[0]); o[t.name] = {f, cols, rows:t.rows.map(r => { const x = {}; cols.forEach((c, i) => { const v = r[i]; x[c] = v === undefined || v === null ? '' : v; }); return x; })}; })); return o; }
 
 /* ---------- ② CODEC — 시트 줄 → 다락방 자료 ---------- */
+/* 보안(3차 시험에서 찾음) — 서버에서 온 글은 화면 틀에 끼워질 때 태그 · 따옴표 · 이스케이프로 바뀌지 않게, 받는 자리에서 한 번 바꿔 둠(꺾쇠 · 따옴표 · & · 역따옴표 · 역슬래시 → 비슷한 글자).
+   화면 틀 수백 곳을 하나하나 고치는 대신 들어오는 문 하나를 막음 — 화면 틀의 esc()는 그대로 두고 그 위에 한 겹 더 */
+const SAFEC = {'<':'＜', '>':'＞', '"':'”', "'":'’', '`':'｀', '&':'＆', '\\':'＼'};
+const safeTxt = v => String(v).replace(/[<>"'`&\\]/g, c => SAFEC[c]);
+const safeDeep = (v, d) => { if (d > 8) return undefined; if (typeof v === 'string') return safeTxt(v); if (typeof v === 'number' || typeof v === 'boolean') return v;
+  if (Array.isArray(v)) return v.map(x => safeDeep(x, d + 1)).filter(x => x !== undefined && x !== null);
+  if (v && typeof v === 'object') { const o = {}; Object.keys(v).forEach(k => { const x = safeDeep(v[k], d + 1); if (x !== undefined && x !== null) o[safeTxt(k)] = x; }); return o; } return undefined; };
 const CV = {
-  s: v => v === undefined || v === null ? '' : String(v),
-  o: v => v === '' || v === undefined || v === null ? undefined : v,                       // 비면 칸 없음
-  os: v => v === '' || v === undefined || v === null ? undefined : String(v),
-  n: v => v === '' || v === undefined || v === null ? undefined : (typeof v === 'number' ? v : isFinite(+String(v).replace(/,/g, '')) ? +String(v).replace(/,/g, '') : v),
+  s: v => v === undefined || v === null ? '' : safeTxt(v),
+  o: v => v === '' || v === undefined || v === null ? undefined : typeof v === 'string' ? safeTxt(v) : v,                       // 비면 칸 없음
+  os: v => v === '' || v === undefined || v === null ? undefined : safeTxt(v),
+  n: v => v === '' || v === undefined || v === null ? undefined : (typeof v === 'number' ? v : isFinite(+String(v).replace(/,/g, '')) ? +String(v).replace(/,/g, '') : safeTxt(v)),
   n0: v => { const x = CV.n(v); return typeof x === 'number' ? x : 0; },
-  j: v => { if (v === '' || v === undefined || v === null) return undefined; if (typeof v === 'object') return v; try { return JSON.parse(v); } catch (e) { return undefined; } },
-  a: v => v === '' || v === undefined || v === null ? [] : String(v).split(' · '),
+  j: v => { if (v === '' || v === undefined || v === null) return undefined; let x = v; if (typeof v !== 'object') { try { x = JSON.parse(v); } catch (e) { return undefined; } } return safeDeep(x, 0); },
+  ja: v => { const x = CV.j(v); return Array.isArray(x) ? x : undefined; },                      // 목록이어야 하는 JSON — 꼴이 다르면 버림(화면이 멈추지 않게)
+  jo: v => { const x = CV.j(v); return x && typeof x === 'object' && !Array.isArray(x) ? x : undefined; },   // 묶음이어야 하는 JSON
+  a: v => v === '' || v === undefined || v === null ? [] : safeTxt(v).split(' · '),
   y: v => v === 'Y' || v === true || v === 1,
+  url: v => { const x = String(v === undefined || v === null ? '' : v).trim(); return /^https?:\/\/[^\s<>"'`\\]+$/i.test(x) ? x : x ? safeTxt(x.replace(/^\s*javascript:/i, '')) : undefined; },   // 링크 칸 — http(s)만 링크로
 };
 const cvSet = (o, k, v) => { if (v === undefined) delete o[k]; else o[k] = v; return o; };
 /* 목록 하나를 서버 줄로 바꿈 — 같은 열쇠의 옛것에 얹어서(시트에 없는 다락방 칸은 남김) · 서버에 없는 것은 뺌 */
@@ -8344,25 +8354,25 @@ const cvByMid = () => { const o = {}; cvMem().forEach(([c, m]) => { if (m.id) o[
 const CODEC = {
   사역DB: {key:['No'], skip:['부담당', '상태', '승인자', '승인일', '포함하는 사역'], dec:R => cvList(EVENTS, R, e => e.id, r => r['No'], (r, e) => {
     e.id = CV.n(r['No']); e.name = CV.s(r['사역명']); cvSet(e, 'form', CV.o(r['유형'])); e.dept = CV.s(r['담당국']); e.owner = CV.s(r['주담당']); e.date = CV.s(r['시작일']); cvSet(e, 'end', CV.os(r['종료일'])); cvSet(e, 'prep', CV.os(r['준비 시작일']));
-    e.budget = CV.n0(r['예산']); e.place = CV.s(r['장소']); e.people = CV.o(r['인원']) === undefined ? '' : r['인원']; cvSet(e, 'steps', CV.j(r['단계 진행(JSON)'])); cvSet(e, 'last', CV.j(r['회고(JSON)'])); cvSet(e, 'church', CV.y(r['교회 사역']) || undefined);
+    e.budget = CV.n0(r['예산']); e.place = CV.s(r['장소']); e.people = CV.o(r['인원']) === undefined ? '' : r['인원']; { const st = CV.ja(r['단계 진행(JSON)']), okp = L => Array.isArray(L) && L.length >= 5 && L.every(x => Array.isArray(x) && x.length === 2 && x.every(n => typeof n === 'number')); if (okp(st)) e.steps = st; else if (st || !okp(e.steps)) e.steps = okp(e.steps) ? e.steps : [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]; }   // 꼴이 다르면 화면이 멈추므로 다섯 칸 묶음만 cvSet(e, 'last', CV.jo(r['회고(JSON)'])); if (e.last && !Array.isArray(e.last.lessons)) e.last.lessons = []; cvSet(e, 'church', CV.y(r['교회 사역']) || undefined);
     if (r['틀 열쇠'] !== '' || e.ck27) { const c = e.ck27 = e.ck27 || {}; cvSet(c, 'state', CV.o(r['확정'])); cvSet(c, 'fam', CV.o(r['계열'])); cvSet(c, 'form', CV.o(r['형태'])); if (r['운영'] === '주담당이 운영') c.op = 1; else if (c.op === 1) c.op = 0; cvSet(c, 'fund', CV.o(r['재원'])); cvSet(c, 'note', CV.o(r['알아 둘 것'])); cvSet(c, 'key', CV.o(r['틀 열쇠'])); }
     return e; })},
   할일: {key:['No'], skip:['받는 분'], dec:R => { const keep = TASKS.filter(t => t.type === '청구'), L = TASKS.filter(t => t.type !== '청구'); cvList(L, R, t => t.id, r => r['No'], (r, t) => {
     t.id = CV.n(r['No']); t.title = CV.s(r['제목']); t.ev = CV.s(r['사역']); t.owner = CV.s(r['담당']); cvSet(t, 'due', CV.os(r['기한'])); t.status = CV.s(r['상태']) || '예정'; cvSet(t, 'block', CV.o(r['막힘 사유'])); cvSet(t, 'desc', CV.o(r['설명']));
-    cvSet(t, 'by', r['출처'] === '체크리스트' ? '체크리스트' : CV.o(r['출처'])); cvSet(t, 'cell', CV.o(r['셀'])); cvSet(t, 'ck', CV.o(r['성격'])); cvSet(t, 'step', CV.n(r['단계'])); cvSet(t, 'ckr', CV.n(r['틀 줄 번호'])); cvSet(t, 'doer', CV.o(r['맡아서 하는 사람'])); cvSet(t, 'member', CV.o(r['실무자'])); cvSet(t, 'chg', CV.j(r['바꾼 담당(JSON)'])); cvSet(t, 'rep', CV.o(r['회의일'])); cvSet(t, 'sub', CV.o(r['포함 사역']));
+    cvSet(t, 'by', r['출처'] === '체크리스트' ? '체크리스트' : CV.o(r['출처'])); cvSet(t, 'cell', CV.o(r['셀'])); cvSet(t, 'ck', CV.o(r['성격'])); cvSet(t, 'step', CV.n(r['단계'])); cvSet(t, 'ckr', CV.n(r['틀 줄 번호'])); cvSet(t, 'doer', CV.o(r['맡아서 하는 사람'])); cvSet(t, 'member', CV.o(r['실무자'])); cvSet(t, 'chg', CV.jo(r['바꾼 담당(JSON)'])); if (t.chg) ['std', 'why', 'by', 'name', 'at'].forEach(k => { if (typeof t.chg[k] !== 'string') t.chg[k] = ''; }); cvSet(t, 'rep', CV.o(r['회의일'])); cvSet(t, 'sub', CV.o(r['포함 사역']));
     return t; }); TASKS.splice(0, TASKS.length, ...L, ...keep); }},
   청구: {key:['No'], dec:R => { const keep = TASKS.filter(t => t.type !== '청구'), L = TASKS.filter(t => t.type === '청구'); cvList(L, R, t => t.id, r => r['No'], (r, t) => {
     const nw = !t.type; t.type = '청구'; t.id = CV.n(r['No']); { const who = CV.s(r['청구자']); if (t.byKey || (nw && TEAMS.includes(who))) { t.byKey = who; t.by = t.by || '팀장'; } else t.by = who; } cvSet(t, 'due', CV.os(r['기한'])); t.ev = CV.s(r['사역']); t.title = CV.s(r['제목']); t.amt = CV.n0(r['금액']);
-    [['shop', '구입처'], ['link', '링크'], ['account', '결제 수단'], ['payDue', '이체 기한'], ['paid', '이체일'], ['receipt', '영수증'], ['review', '상태'], ['fund', '재원'], ['ledger', '장부 ID'], ['note', '메모'], ['approve', '예산 확인']].forEach(([k, c]) => cvSet(t, k, CV.os(r[c]))); cvSet(t, 'people', CV.n(r['인원']));
+    [['shop', '구입처'], ['account', '결제 수단'], ['payDue', '이체 기한'], ['paid', '이체일'], ['receipt', '영수증'], ['review', '상태'], ['fund', '재원'], ['ledger', '장부 ID'], ['note', '메모'], ['approve', '예산 확인']].forEach(([k, c]) => cvSet(t, k, CV.os(r[c]))); cvSet(t, 'people', CV.n(r['인원'])); cvSet(t, 'link', CV.url(r['링크']));
     const cat = [r['대항목'], r['중항목'], r['소항목']].map(CV.s); if (cat.some(Boolean) || t.cat) t.cat = cat; t.owner = t.owner || '회계'; if (nw || !t.status) t.status = t.review === '확정' ? '완료' : '예정'; return t; }); TASKS.splice(0, TASKS.length, ...keep, ...L); }},
   연간일정: {key:null, dec:R => { const y = S.year, L = SCHED[y] = SCHED[y] || []; L.splice(0, L.length, ...R.filter(r => r['종류'] === '일정').map(r => [CV.s(r['시작']), CV.s(r['끝']), CV.s(r['주관']), CV.s(r['이름']), CV.s(r['분류']), CV.s(r['상태']), ...(r['비고'] !== '' || r['사역 열쇠'] !== '' ? [CV.s(r['비고'])] : []), ...(r['사역 열쇠'] !== '' ? [CV.s(r['사역 열쇠'])] : [])]));
     DEADLINES.splice(0, DEADLINES.length, ...R.filter(r => r['종류'] === '마감').map(r => cvSet(cvSet({due:CV.s(r['시작']), t:CV.s(r['이름'])}, 'ev', CV.o(r['사역 열쇠'])), 'who', CV.s(r['담당']))));
     CHURCH.splice(0, CHURCH.length, ...R.filter(r => r['종류'] === '교회 일정').map(r => ({d:CV.s(r['시작']), t:CV.s(r['이름'])}))); MEET.splice(0, MEET.length, ...R.filter(r => r['종류'] === '모임').map(r => ({d:CV.s(r['시작']), t:CV.s(r['이름'])}))); }},
-  문서: {key:['No'], dec:R => cvList(DOCREC, R, d => d.id, r => r['No'], (r, d) => { d.id = CV.n(r['No']); d.kind = CV.s(r['종류']).split(' · ')[0]; d.title = CV.s(r['제목']); cvSet(d, 'ev', CV.o(r['사역'])); d.date = CV.s(r['날짜']); d.by = CV.s(r['작성(직책)']); cvSet(d, 'status', CV.o(r['상태'])); d.f = CV.j(r['칸 내용(JSON)']) || {}; cvSet(d, 'pdf', CV.o(r['PDF 경로'])); cvSet(d, 'edits', CV.j(r['고친 기록(JSON)'])); return d; })},
-  조사: {key:['No'], dec:R => cvList(SURVEYS, R, s => s.id, r => r['No'], (r, s) => { const k = CV.s(r['종류']).split(' · '); s.id = CV.n(r['No']); s.title = CV.s(r['제목']); s.kind = k[0]; cvSet(s, 'car', k[1] === '차량' || undefined); s.audience = CV.s(r['대상']); cvSet(s, 'ev', CV.o(r['사역 No'])); s.deadline = CV.s(r['마감']); s.by = CV.s(r['만든 직책']); s.options = CV.a(r['선택지']); s.resp = CV.j(r['응답(JSON)']) || {}; cvSet(s, 'page', CV.o(r['신청 페이지'])); s.closed = CV.y(r['닫힘']); return s; })},
+  문서: {key:['No'], dec:R => cvList(DOCREC, R, d => d.id, r => r['No'], (r, d) => { d.id = CV.n(r['No']); d.kind = CV.s(r['종류']).split(' · ')[0]; d.title = CV.s(r['제목']); cvSet(d, 'ev', CV.o(r['사역'])); d.date = CV.s(r['날짜']); d.by = CV.s(r['작성(직책)']); cvSet(d, 'status', CV.o(r['상태'])); d.f = CV.jo(r['칸 내용(JSON)']) || {}; cvSet(d, 'pdf', CV.url(r['PDF 경로'])); cvSet(d, 'edits', CV.ja(r['고친 기록(JSON)'])); return d; })},
+  조사: {key:['No'], dec:R => cvList(SURVEYS, R, s => s.id, r => r['No'], (r, s) => { const k = CV.s(r['종류']).split(' · '); s.id = CV.n(r['No']); s.title = CV.s(r['제목']); s.kind = k[0]; cvSet(s, 'car', k[1] === '차량' || undefined); s.audience = CV.s(r['대상']); cvSet(s, 'ev', CV.o(r['사역 No'])); s.deadline = CV.s(r['마감']); s.by = CV.s(r['만든 직책']); s.options = CV.a(r['선택지']); s.resp = CV.jo(r['응답(JSON)']) || {}; Object.keys(s.resp).forEach(k => { if (!s.resp[k] || typeof s.resp[k] !== 'object' || Array.isArray(s.resp[k])) delete s.resp[k]; }); cvSet(s, 'page', CV.url(r['신청 페이지'])); s.closed = CV.y(r['닫힘']); return s; })},
   승인: {key:['No'], dec:R => { const keep = EX.approvals.filter(a => a.who), L = EX.approvals.filter(a => !a.who); cvList(L, R.filter(r => !/^상태 변경 #/.test(CV.s(r['이름']))), a => a.id, r => r['No'], (r, a) => { a.id = CV.n(r['No']); a.name = CV.s(r['이름']); a.type = CV.s(r['종류']); a.owner = CV.s(r['올린 직책']); a.date = CV.s(r['날짜']); a.status = CV.s(r['상태']); cvSet(a, 'doc', CV.n(r['문서 No'])); cvSet(a, 'why', CV.o(r['사유'])); cvSet(a, 'ok', CV.o(r['확인자'])); return a; }); EX.approvals.splice(0, EX.approvals.length, ...L, ...keep); }},
-  인수인계: {key:['연도', '자리'], dec:R => { Object.keys(HANDED).forEach(k => delete HANDED[k]); R.forEach(r => { const d = CV.j(r['체크한 줄(JSON)']) || {}; HANDED[CV.s(r['자리'])] = cvSet(cvSet({done:d}, 'at', CV.o(r['마친 날'])), 'by', CV.o(r['마친 사람'])); }); }},
-  알림: {key:['No'], dec:R => cvList(NOTES, R, n => n.id, r => r['No'], (r, n) => { n.id = CV.n(r['No']); n.date = CV.s(r['보낸 시각']); n.from = CV.s(r['보낸 직책']); n.to = CV.a(r['받는 직책들']); n.text = CV.s(r['내용']); cvSet(n, 'ev', CV.o(r['관련 사역'])); cvSet(n, 'read', CV.j(r['읽음(JSON)'])); cvSet(n, 'reply', CV.j(r['한 줄 답(JSON)'])); return n; })},
+  인수인계: {key:['연도', '자리'], dec:R => { Object.keys(HANDED).forEach(k => delete HANDED[k]); R.forEach(r => { const d = CV.jo(r['체크한 줄(JSON)']) || {}; HANDED[CV.s(r['자리'])] = cvSet(cvSet({done:d}, 'at', CV.o(r['마친 날'])), 'by', CV.o(r['마친 사람'])); }); }},
+  알림: {key:['No'], dec:R => cvList(NOTES, R, n => n.id, r => r['No'], (r, n) => { n.id = CV.n(r['No']); n.date = CV.s(r['보낸 시각']); n.from = CV.s(r['보낸 직책']); n.to = CV.a(r['받는 직책들']); n.text = CV.s(r['내용']); cvSet(n, 'ev', CV.o(r['관련 사역'])); cvSet(n, 'read', CV.jo(r['읽음(JSON)'])); cvSet(n, 'reply', CV.jo(r['한 줄 답(JSON)'])); return n; })},
   공지: {key:['No'], dec:R => cvList(NOTICES, R, n => n.id, r => r['No'], (r, n) => { n.id = CV.n(r['No']); n.date = CV.s(r['날짜']); n.by = CV.s(r['보낸 직책']); n.kind = CV.s(r['종류']); n.text = CV.s(r['내용']); n.important = CV.y(r['중요']); return n; })},
   QA: {key:['No'], dec:R => cvList(QUESTIONS, R, q => q.id, r => r['No'], (r, q) => { q.id = CV.n(r['No']); q.kind = CV.s(r['종류']); q.text = CV.s(r['질문']); cvSet(q, 'answer', CV.o(r['답'])); q.by = CV.s(r['질문자']); q.role = CV.s(r['직책']); cvSet(q, 'answeredBy', CV.o(r['답한 직책'])); q.date = CV.s(r['질문일']); cvSet(q, 'date2', CV.o(r['답일'])); q.toFaq = CV.y(r['FAQ 올림']); return q; })},
   교육이력: {key:['No'], dec:R => cvList(EDU, R, e => e.id, r => r['No'], (r, e) => { e.id = CV.n(r['No']); e.year = CV.n(r['연도']); e.date = CV.s(r['날짜']); e.name = CV.s(r['사역명']); e.topics = CV.a(r['주제들']); e.lecturer = CV.s(r['강사']); e.audience = CV.s(r['대상']); cvSet(e, 'people', CV.n(r['인원'])); e.key = CV.a(r['핵심']); cvSet(e, 'response', CV.o(r['반응'])); cvSet(e, 'next', CV.o(r['다음엔'])); e.planned = CV.y(r['예정']); return e; })},
@@ -8381,9 +8391,9 @@ const CODEC = {
   기도제목: {key:['No'], skip:['셀', '이름', '입력자'], dec:R => { const by = cvByMid(); cvList(PRAY, R, x => x.id, r => r['No'], (r, x) => { const m = by[CV.s(r['교적부 ID'])]; x.id = CV.n(r['No']); x.d = CV.s(r['날짜']); x.c = CV.s(r['셀']); x.n = m ? m.n : CV.s(r['이름']); x.text = CV.s(r['제목']); return x; }); }},
   새가족명부: {key:['No'], dec:R => cvList(NEWFAM, R, x => x.id, r => r['No'], (r, x) => { x.id = CV.n(r['No']); x.n = CV.s(r['이름']); cvSet(x, 'age', CV.n(r['나이'])); cvSet(x, 'phone', CV.os(r['연락처'])); x.kind = CV.s(r['구분']); cvSet(x, 'lead', CV.o(r['인도자'])); cvSet(x, 'job', CV.o(r['상태'])); cvSet(x, 'care', CV.o(r['양육 담당'])); x.since = CV.s(r['첫 방문일']); x.stage = CV.s(r['단계']); cvSet(x, 'wk', CV.n(r['주차'])); x.edu = CV.a(r['교육(4)']); cvSet(x, 'last', CV.o(r['마지막 연락'])); cvSet(x, 'sent', CV.o(r['파송일'])); cvSet(x, 'cell', CV.o(r['셀'])); cvSet(x, 'addr', CV.o(r['주소'])); return x; })},
   새가족심방: {key:['No'], dec:R => cvList(NFVISITS, R, x => x.id, r => r['No'], (r, x) => { x.id = CV.n(r['No']); x.date = CV.s(r['일자']); x.targets = CV.a(r['대상들']); x.with = CV.a(r['동행자']); cvSet(x, 'youth', CV.o(r['청년 동행'])); cvSet(x, 'why', CV.o(r['동행 이유'])); x.people = CV.n0(r['인원']); x.amt = CV.n0(r['금액']); x.pay = CV.s(r['결제 수단']); cvSet(x, 'over', CV.o(r['단가 초과 사유'])); x.by = CV.s(r['입력자']); cvSet(x, 'claim', CV.n(r['청구 No'])); cvSet(x, 'ledger', CV.o(r['장부 ID'])); return x; })},
-  돌봄: {key:['교적부 ID'], skip:['이름'], dec:R => { const by = cvByMid(); cvList(CARE, R, x => (cvMem().find(([c, m]) => m.n === x.n) || [0, {}])[1].id || x.n, r => r['교적부 ID'] || r['이름'], (r, x) => { const m = by[CV.s(r['교적부 ID'])]; x.n = m ? m.n : CV.s(r['이름']); x.why = CV.s(r['까닭']); x.since = CV.s(r['시작일']); cvSet(x, 'last', CV.os(r['마지막 연락'])); cvSet(x, 'next', CV.os(r['다음 연락'])); x.log = CV.j(r['연락 기록(JSON)']) || []; cvSet(x, 'auto', CV.y(r['자동']) || undefined); return x; }); }},
-  상태변경: {key:['No'], skip:['이름'], dec:R => { const by = cvByMid(), keep = EX.approvals.filter(a => !a.who), L = EX.approvals.filter(a => a.who); cvList(L, R, a => a.id, r => r['No'], (r, a) => { const m = by[CV.s(r['교적부 ID'])]; a.id = CV.n(r['No']); a.who = m ? m.n : CV.s(r['이름']); a.to = CV.s(r['이후']); a.owner = CV.s(r['제안자']); a.date = CV.s(r['제안일']); a.status = CV.s(r['상태']); cvSet(a, 'detail', CV.j(r['근거(JSON)'])); cvSet(a, 'ok', CV.o(r['확인자'])); a.type = a.type || '상태 변경'; a.name = a.name || `${a.who} — ${a.to}`; return a; }); EX.approvals.splice(0, EX.approvals.length, ...keep, ...L); }},
-  보관함: {key:['이름', '보관일'], dec:R => ARCHIVE.splice(0, ARCHIVE.length, ...R.map(r => ({n:CV.s(r['이름']), cell:CV.s(r['있던 셀']), status:CV.s(r['상태']), at:CV.s(r['보관일']), by:CV.s(r['보관자']), reason:CV.s(r['사유']), m:CV.j(r['원래 줄(JSON)']) || {}})))},
+  돌봄: {key:['교적부 ID'], skip:['이름'], dec:R => { const by = cvByMid(); cvList(CARE, R, x => (cvMem().find(([c, m]) => m.n === x.n) || [0, {}])[1].id || x.n, r => r['교적부 ID'] || r['이름'], (r, x) => { const m = by[CV.s(r['교적부 ID'])]; x.n = m ? m.n : CV.s(r['이름']); x.why = CV.s(r['까닭']); x.since = CV.s(r['시작일']); cvSet(x, 'last', CV.os(r['마지막 연락'])); cvSet(x, 'next', CV.os(r['다음 연락'])); x.log = (CV.ja(r['연락 기록(JSON)']) || []).filter(z => z && typeof z === 'object' && !Array.isArray(z)); cvSet(x, 'auto', CV.y(r['자동']) || undefined); return x; }); }},
+  상태변경: {key:['No'], skip:['이름'], dec:R => { const by = cvByMid(), keep = EX.approvals.filter(a => !a.who), L = EX.approvals.filter(a => a.who); cvList(L, R, a => a.id, r => r['No'], (r, a) => { const m = by[CV.s(r['교적부 ID'])]; a.id = CV.n(r['No']); a.who = m ? m.n : CV.s(r['이름']); a.to = CV.s(r['이후']); a.owner = CV.s(r['제안자']); a.date = CV.s(r['제안일']); a.status = CV.s(r['상태']); cvSet(a, 'detail', CV.jo(r['근거(JSON)'])); cvSet(a, 'ok', CV.o(r['확인자'])); a.type = a.type || '상태 변경'; a.name = a.name || `${a.who} — ${a.to}`; return a; }); EX.approvals.splice(0, EX.approvals.length, ...keep, ...L); }},
+  보관함: {key:['이름', '보관일'], dec:R => ARCHIVE.splice(0, ARCHIVE.length, ...R.map(r => ({n:CV.s(r['이름']), cell:CV.s(r['있던 셀']), status:CV.s(r['상태']), at:CV.s(r['보관일']), by:CV.s(r['보관자']), reason:CV.s(r['사유']), m:CV.jo(r['원래 줄(JSON)']) || {}})))},
   심방일지: {key:['No'], skip:['교적부 ID', '이름', '셀'], dec:R => cvList(VISITS, R, v => v.id, r => r['No'], (r, v) => { v.id = CV.n(r['No']); v.date = CV.s(r['일자']); v.m = CV.s(r['이름']); v.cell = CV.s(r['셀']); v.type = CV.s(r['유형']); v.by = CV.s(r['담당']); ['why', 'sum'].forEach((k, i) => { const c = ['계기', '요약'][i]; if (c in r) v[k] = CV.s(r[c]); }); if ('후속' in r) cvSet(v, 'follow', CV.o(r['후속'])); if ('다음 연락' in r) cvSet(v, 'next', CV.o(r['다음 연락'])); v.status = CV.s(r['상태']); v.secret = CV.y(r['비공개']); return v; })},
   장부: {key:['ID'], skip:['영수증', '실지출일'], dec:R => cvList(LEDGER, R, l => l.no, r => r['ID'], (r, l) => { l.no = CV.s(r['ID']); l.date = CV.s(r['거래일']); l.fund = CV.s(r['재원']); l.cat = [r['대항목'], r['중항목'], r['소항목']].map(CV.s); l.amt = CV.n0(r['금액']); l.what = CV.s(r['적요']); l.pay = CV.s(r['결제 수단']); cvSet(l, 'by', CV.o(r['지출자'])); l.receipt = r['영수증'] !== ''; l.via = CV.s(r['입력 경로']); cvSet(l, 'paid', CV.os(r['이체일'])); cvSet(l, 'etc', CV.o(r['기타 종류'])); cvSet(l, 'people', CV.n(r['인원'])); cvSet(l, 'note', CV.o(r['비고'])); cvSet(l, 'rcFrom', CV.o(r['영수증 원행'])); return l; })},
   수입: {key:['No'], dec:R => cvList(INCOME, R, x => x.id, r => r['No'], (r, x) => { x.id = CV.n(r['No']); x.date = CV.s(r['일자']); cvSet(x, 'kind', CV.o(r['종류'])); x.fund = CV.s(r['재원']); x.amt = CV.n0(r['금액']); x.what = CV.s(r['내용']); cvSet(x, 'ev', CV.o(r['사역'])); cvSet(x, 'donor', CV.o(r['후원자'])); cvSet(x, 'for', CV.o(r['지정 사역'])); return x; })},
@@ -8401,6 +8411,7 @@ const CVLOCAL = ['체크리스트틀', '담당기준', '담당예외', '직책�
 const SRV = {url:'https://script.google.com/macros/s/AKfycbwWtGi7KaPkrkP01rz4Hfvqk_Hb5CTgm-HgNT2qvvoUiNra1kYrrLC73xhEiGBsJEk/exec', state:'off', tok:null, user:null, base:null, ready:false, busy:false, again:false, dirty:false, t:0, at:'', err:'', bad:[], users:null, loadedAt:0, loading:false, ver:{}, ms:{}, sv:{}};
 SRV.on = /^https?:\/\//.test(SRV.url);
 const SRVTK = 'sein_srv_tok';
+SRV.framed = (() => { try { return window.top !== window.self; } catch (e) { return true; } })();   // 남의 쪽 안(iframe)에 끼워 넣어 비밀번호를 받게 하는 것(클릭재킹) 막기 — GitHub Pages는 머리말(frame-ancestors)을 못 정해서
 function srvTokGet(){ try { return localStorage.getItem(SRVTK) || sessionStorage.getItem(SRVTK); } catch (e) { return null; } }
 function srvTokSet(t, keep){ try { localStorage.removeItem(SRVTK); sessionStorage.removeItem(SRVTK); if (t) (keep ? localStorage : sessionStorage).setItem(SRVTK, t); } catch (e) {} }
 async function api(a, p){
@@ -8414,7 +8425,7 @@ async function api(a, p){
 }
 function srvGone(msg){ SRV.leaving = true; srvTokSet(null); SRV.tok = null; S.role = null; S.name = null; save(); try { sessionStorage.setItem('sein_srv_msg', msg); } catch (e) {} location.reload(); }
 /* 서버의 자리 → 다락방의 S */
-function srvSeat(u){ const rk = u.rk || u.role; if (rk === '관리자') return {role:'마스터', name:'관리자', cell:null, team:null};
+function srvSeat(u){ u = safeDeep(u, 0) || {}; const rk = u.rk || u.role; if (rk === '관리자') return {role:'마스터', name:'관리자', cell:null, team:null};
   if (rk === '셀리더') return {role:'셀리더', name:u.name, cell:u.seat, team:null}; if (u.role === '팀장') return {role:'팀장', name:u.name, cell:null, team:rk}; return {role:rk, name:u.name, cell:null, team:null}; }
 const srvMyKey = () => myKey() || S.role;
 function srvVer(v){ if (SRV.ver[v.f] === v.old) SRV.ver[v.f] = v.v; }   // 내가 쓴 것만 바뀌었으면 다시 받지 않음   // 조사 응답 · 알림 읽음의 내 몫 열쇠(서버의 seatKey와 같음)
@@ -8426,7 +8437,7 @@ function srvApply(T){ SRV.bad = [];
     const rows = (t.rows || []).map(r => { const o = {}; t.cols.forEach((c, i) => { o[c] = r[i] === undefined || r[i] === null ? '' : r[i]; }); return o; });
     try { CODEC[n].dec(rows); } catch (e) { SRV.bad.push(n); console.error('받기 ' + n, e); } });
   const me = USERS.find(x => x.role === S.role && (!x.cell || x.cell === S.cell) && (!x.team || x.team === S.team));   // 내 이름은 서버가 준 것으로
-  if (me && SRV.user && S.role !== '마스터') { me.real = SRV.user.name; me.name = SRV.user.name; } }
+  if (me && SRV.user && S.role !== '마스터') { me.real = safeTxt(SRV.user.name); me.name = me.real; } }
 
 /* 다락방 자료 → 탭별 줄(비교용 글자 + 보낼 값) */
 const SYNC = ['교적부', '셀편성', '사역DB', '할일', '장부', '청구', '영수증', '수입', '재원변경', '예산조정', '회비현황', '연간일정', '문서', '조사', '승인', '상태변경', '인수인계', '알림', '공지', 'QA', '교육이력', '국팀', '매뉴얼제안', '상시사역로그', '주간', '기도제목', '새가족명부', '새가족심방', '돌봄', '보관함', '주일예배'];
@@ -8496,7 +8507,7 @@ async function srvLoad(o){ o = o || {}; if (SRV.loading) return false; SRV.loadi
     const j = o.data || await api('load', Object.assign({tabs:CVORDER}, o.files ? {files:o.files} : {})); if (!j.ok) { SRV.err = j.error || '불러오지 못했습니다'; if (SRV.state !== 'in') { SRV.state = 'fail'; srvView(); } else toast(SRV.err); return false; }
     SRV.user = j.user; const me = srvSeat(j.user); S.role = me.role; S.name = me.name; S.cell = me.cell; S.team = me.team; S.year = THIS_YEAR + 1; S.arch = null; save();
     SRV.ready = false; yearSwap(); srvApply(j.tabs || {}); SRV.state = 'in'; SRV.loadedAt = Date.now(); SRV.err = ''; (j.files || Object.keys(j.ver || {})).forEach(f => { if (j.ver && j.ver[f]) SRV.ver[f] = j.ver[f]; });
-    _render0(); SRV.base = srvEnc(); SRV.ready = true; SRV.at = new Date().toTimeString().slice(0, 5);
+    try { _render0(); } catch (e) { console.error('그리기', e); } SRV.base = srvEnc(); SRV.ready = true; SRV.at = new Date().toTimeString().slice(0, 5);
     if (SRV.bad.length) toast('시트 머리줄이 설계와 다른 탭: ' + SRV.bad.join(' · ') + ' — 관리자 확인');
     return true; }
   finally { SRV.loading = false; srvPill(); } }
@@ -8562,12 +8573,13 @@ body.srv #ynote .btn{display:none}
 @media (max-width:900px){.srvst{top:calc(env(safe-area-inset-top,0px) + 13px);bottom:auto;right:max(12px,env(safe-area-inset-right,0px));padding:3px 9px;font-size:11px;max-width:46vw}.srvst.ok .l{display:none}.srvst.warn .t{display:none}body.menu-open .srvst{display:none}}
 </style>`);
   render = function(){
+    if (SRV.framed) { document.body.innerHTML = '<div style="padding:40px 20px;text-align:center;font:15px/1.6 sans-serif">다락방은 주소창에 직접 열어 주세요<br><a href="https://sein-youngadult.github.io/darakbang/" target="_top" rel="noopener">sein-youngadult.github.io/darakbang</a></div>'; return; }
     if (SRV.state === 'off') { srvBoot(); return; }
     if (SRV.state === 'boot' || SRV.state === 'fail') { srvView(); return; }
     if (!S.role && location.hash !== '#login') { history.replaceState(null, '', '#login'); }
     if (S.role) { S.year = THIS_YEAR + 1; S.arch = null; }
-    _render0(); srvUnveil();
-    srvAfter();
+    try { _render0(); } catch (e) { console.error(e); const pg = document.getElementById('page'); if (pg) pg.innerHTML = '<div class="lock"><div class="ic">⚠︎</div><h2>이 화면을 그리다 멈췄습니다</h2><p class="note">다른 화면은 쓸 수 있습니다. 같은 일이 되풀이되면 관리자에게 알려 주세요.</p><div class="row"><button class="btn" onclick="go(homeDoor())">내 화면으로</button></div></div>'; }
+    srvUnveil(); srvAfter();
     if (SRV.ready) { SRV.dirty = true; clearTimeout(SRV.t); SRV.t = setTimeout(srvSync, 700); }
     srvPill(); };
   window.addEventListener('beforeunload', e => { if (!SRV.leaving && SRV.state === 'in' && SRV.ready) if (SRV.busy || (SRV.dirty && srvPending())) { e.preventDefault(); e.returnValue = ''; } });
@@ -8606,7 +8618,7 @@ function srvUsersHtml(){ if (!SRV.users) { srvUsers(); return '<div class="empty
   const btn = (u, a, l, c) => `<button class="btn s ${c || ''}" onclick="srvAdm('${a}','${esc(u.id)}')">${l}</button>`;
   return `<div class="tblwrap"><table class="tbl mtbl" id="srvutbl"><thead><tr><th>이름</th><th>직책 · 자리</th><th>상태</th><th>마지막 로그인</th><th></th></tr></thead><tbody>${L.concat(ad ? [ad] : []).map(u => `<tr><td class="full"><b>${esc(u.name)}</b> <small class="note">${esc(u.id)}</small></td><td data-l="직책">${esc(u.role)}${u.seat ? ' · ' + esc(u.seat) : ''}</td><td data-l="상태">${st(u) || '—'}</td><td data-l="마지막">${esc(u.last || '—')}</td><td data-l="" style="white-space:nowrap">${u.role === '관리자' ? '' : btn(u, 'reissue', '비밀번호 새로')}${u.locked || u.fails ? ' ' + btn(u, 'unlock', '잠금 풂') : ''}${u.visitPw ? ' ' + btn(u, 'clearVpw', '심방 비번 지움') : ''}${u.role === '관리자' ? '' : ' ' + btn(u, 'state', u.state === '중지' ? '다시 사용' : '중지', u.state === '중지' ? '' : 'ghost')}</td></tr>`).join('')}</tbody></table></div>
   <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center"><button class="btn s" onclick="SRV.users=null;render()">목록 새로</button><span class="note">사람을 바꾸는 것(새 사용자 · 자리 옮김)은 지금은 시트의 '사용자' · '조직' 탭에서 — 관리자 매뉴얼(M05) 6장</span></div>`; }
-async function srvUsers(){ if (SRV.uload) return; SRV.uload = true; const j = await api('admin.users'); SRV.uload = false; if (!j.ok) { toast(j.error || '사용자 목록을 못 불러왔습니다'); SRV.users = []; } else SRV.users = j.users; if (S.role === '마스터') _render0(); }
+async function srvUsers(){ if (SRV.uload) return; SRV.uload = true; const j = await api('admin.users'); SRV.uload = false; if (!j.ok) { toast(j.error || '사용자 목록을 못 불러왔습니다'); SRV.users = []; } else SRV.users = safeDeep(j.users, 0) || []; if (S.role === '마스터') _render0(); }
 async function srvAdm(a, id){ const u = (SRV.users || []).find(x => x.id === id); if (!u) return;
   if (a === 'reissue' && !confirm(`${u.name} — 비밀번호를 새로 낼까요? 지금 쓰던 비밀번호와 다른 기기의 로그인은 끊깁니다.`)) return;
   if (a === 'state' && u.state !== '중지' && !confirm(`${u.name} — 사용을 멈출까요? 로그인이 끊기고 들어올 수 없습니다.`)) return;
@@ -8624,6 +8636,8 @@ CHANGELOG.unshift(['2026-11-23', '', '서버 연결 준비 — 시트와 주고�
   '이름 고르기 — 이름을 끝까지 친 뒤 목록에서 골라도 바로 이름표로 들어갑니다',
   '불러오는 동안 다락방 로고의 전구가 하나씩 켜지고, 다 되면 창 쪽으로 들어갑니다 · 다락방에 이미 있는 큰 탭(체크리스트 틀)은 서버에서 다시 받지 않음',
   '주일 예배의 "콘티 도우미" 단추가 새 콘티 도우미(sein-songlist)로 열립니다',
+  '보안 — 다른 사람이 넣은 글이 화면에서 실행되지 않게 막았습니다(꺾쇠 · 따옴표 · &는 비슷한 글자 ＜ ” ’ ＆로 보임) · 링크는 http(s)만 · 서버 말고 다른 곳으로는 보내지 못함 · 남의 쪽 안에 끼우면 열리지 않음',
+  '이상한 값이 와도 화면 전체가 멈추지 않게 — 멈추면 그 화면에만 안내',
   '아직 안 되는 것 — 지우기, 영수증 사진 올리기, 심방일지 쓰기(읽기만), 조직 · 사용자 바꾸기(시트에서)']]);
 
 autoBdayNotice();
