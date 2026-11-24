@@ -3311,7 +3311,7 @@ function memberNew(){ const cells = Object.keys(CELLS);
 /* 붙여넣기 — 엑셀 · 시트에서 복사한 줄: 이름 [탭] 생일 [탭] 연락처 [탭] 셀 [탭] 상태 [탭] 등록일. 쉼표도 됨. 미리보기 → 확정 */
 function memberPaste(fixedStatus){ const cells = Object.keys(CELLS), isP = fixedStatus === '진급';
   modal(`<div class="head"><div><small>교적부 · 붙여넣기 · 목양국장</small><h3>${isP ? '고3 진급자 붙여넣기' : '여러 명 한 번에'}</h3><small>${isP ? '중고등부에서 받은 명단 — 이름 · 생일 · 연락처 · (셀). 상태는 진급, 등록일은 진급일. 2월까지 \'진급\'으로 표시되고 3월 1일에 출석으로 바뀝니다.' : '엑셀에서 복사해 붙이세요. 한 줄 = 한 사람. 열 순서: 이름 · 생일 · 연락처 · 셀 · 상태 · 등록일 · 성별 · 작년 분류 (뒤쪽은 비워도 됨). 셀을 비우면 "아직 셀이 없는 사람"으로 들어가고, 관리자가 셀 편성판에서 배정합니다.'}</small></div><button class="x" onclick="closeModal()">×</button></div>
-  <div class="cont"><form class="form" id="mpf">${isP ? `<label>진급일 <input id="mp_r" type="date" value="${TODAY.getFullYear() + 1}-01-03"></label>` : ''}<label>붙여넣기 <textarea id="mp_t" rows="6" placeholder="${isP ? '김새벽\t2008-03-02\t010-1234-5678\t설해린 셀' : '홍길동\t2001-05-04\t010-1234-5678\t은혜셀\t출석\t2026-11-01'}" style="font-family:ui-monospace,monospace;font-size:12.5px"></textarea></label>
+  <div class="cont"><form class="form" id="mpf">${isP ? `<label>진급일 <input id="mp_r" type="date" value="${TODAY.getFullYear() + 1}-01-03"></label>` : ''}<label>붙여넣기 <textarea id="mp_t" rows="6" placeholder="${isP ? `김새벽\t2008-03-02\t010-1234-5678\t${esc(cellLeader(Object.keys(CELLS)[0]) || '○○')} 셀` : `홍길동\t2001-05-04\t010-1234-5678\t${esc(Object.keys(CELLS)[0] || '은혜셀')}\t출석\t${TODAYISO}`}" style="font-family:ui-monospace,monospace;font-size:12.5px"></textarea></label>
   <div style="display:flex;gap:8px"><button type="button" class="btn" onclick="memberPastePreview(${isP})">미리보기</button><button class="btn p" id="mp_ok" disabled>확정</button></div><div id="mp_prev"></div></form></div>`, () => { document.getElementById('mp_t').focus();
     document.getElementById('mpf').onsubmit = e => { e.preventDefault(); const R = window._PASTE || []; const ok = R.filter(r => !r.err); if (!ok.length) return;
       ok.forEach(r => (r.cell ? CELLS[r.cell] : POOL).push(memBlank({n:r.n, bday:r.bday || undefined, phone:r.phone, status:r.status, statusAt:TODAYISO, reg:r.reg || undefined, sex:r.sex || undefined, prev:r.prev || undefined})));
@@ -3321,7 +3321,7 @@ function memberPastePreview(isP){ const cells = Object.keys(CELLS), lines = docu
   const R = lines.map(l => { const f = l.split(/\t|,|\|/).map(x => x.trim()); const r = {n:f[0] || '', bday:/^\d{4}-\d{2}-\d{2}$/.test(f[1] || '') ? f[1] : '', phone:f[2] || '', cell:findCell(f[3]) || (isP || !f[3] ? null : null), status:isP ? '진급' : (STATUSES.includes(f[4]) ? f[4] : '출석'), reg:isP ? regP : (/^\d{4}-\d{2}-\d{2}$/.test(f[5] || '') ? f[5] : ''), sex:/^남/.test(f[6] || '') ? '남' : /^여/.test(f[6] || '') ? '여' : '', prev:GRADECLS[f[7]] ? f[7] : ''};
     if (!r.n) r.err = '이름 없음'; else if (!r.cell && f[3]) r.err = `셀 모름: ${f[3]}`; else if ([...Object.values(CELLS).flat(), ...POOL].some(m => m.n === r.n)) r.err = '이미 교적부에 있음'; return r; });   // v97 — 셀이 비면 미배정으로
   window._PASTE = R; document.getElementById('mp_ok').disabled = !R.some(r => !r.err);
-  document.getElementById('mp_prev').innerHTML = `<div class="tblwrap" style="margin-top:8px"><table class="tbl"><thead><tr><th>이름</th><th>생일</th><th>연락처</th><th>셀</th><th>상태</th><th>등록일</th><th></th></tr></thead><tbody>${R.map(r => `<tr style="${r.err ? 'opacity:.55' : ''}"><td>${esc(r.n)}</td><td>${r.bday || '—'}</td><td>${esc(r.phone) || '—'}</td><td>${r.cell ? cnS(r.cell) : r.err ? '—' : '미배정'}</td><td>${r.status}</td><td>${r.reg || '—'}</td><td>${r.err ? `<span class="pill bad" style="font-size:10px">${r.err}</span>` : '<span class="pill ok" style="font-size:10px">넣음</span>'}</td></tr>`).join('')}</tbody></table></div><p class="note" style="margin:6px 0 0">${R.filter(r => !r.err).length}명 넣음 · ${R.filter(r => r.err).length}줄 건너뜀. 셀은 "은혜셀" · "은혜" · "민서윤 셀" 어느 것으로 적어도 됩니다.</p>`; }
+  document.getElementById('mp_prev').innerHTML = `<div class="tblwrap" style="margin-top:8px"><table class="tbl"><thead><tr><th>이름</th><th>생일</th><th>연락처</th><th>셀</th><th>상태</th><th>등록일</th><th></th></tr></thead><tbody>${R.map(r => `<tr style="${r.err ? 'opacity:.55' : ''}"><td>${esc(r.n)}</td><td>${r.bday || '—'}</td><td>${esc(r.phone) || '—'}</td><td>${r.cell ? cnS(r.cell) : r.err ? '—' : '미배정'}</td><td>${r.status}</td><td>${r.reg || '—'}</td><td>${r.err ? `<span class="pill bad" style="font-size:10px">${r.err}</span>` : '<span class="pill ok" style="font-size:10px">넣음</span>'}</td></tr>`).join('')}</tbody></table></div><p class="note" style="margin:6px 0 0">${R.filter(r => !r.err).length}명 넣음 · ${R.filter(r => r.err).length}줄 건너뜀. 셀은 "${esc(cells[0] || '은혜셀')}" · "${esc(String(cells[0] || '은혜셀').replace(/셀$/, ''))}" · "${esc(cellLeader(cells[0]) || '○○')} 셀" 어느 것으로 적어도 됩니다.</p>`; }
 const DECIDE = ['겨울수련회 장소 — 연세대 숙박 + 대학교회 vs 가나안농군학교 (12월 임원회)', '리더 MT 숙소 예산 초과분 처리 (20% 미만이면 표시만 · 넘으면 예산 조정)'];
 let PROPOSALS = [{doc:'재정 운영 규정(안)', text:'4.3 영수증 — 사진이 있으면 지출 인정, 실물은 월별 봉투로 제출 (근거: 다락방 영수증 사진 저장 도입)', by:'회계', date:'10/28'}, {doc:'목양 운영 규정(안)', text:'3장 셀 뷰 열 — 생일을 셀리더 뷰에 넣기 (근거: 셀리더 답변 17 "생일 챙기기"), 10장 헌금 명단 전체 열람 (답변 5)', by:'회장', date:'10/30'}];
 const IMPROVE = new Set(), CLOSE = new Set();
@@ -3553,6 +3553,13 @@ const EX = {
     '사역 운영 규정(안) · 초안':[['차기 회장','10/20','7장 임원 교체기에 "1/1 밤샘기도회는 현 임원단 준비"를 넣으면 좋겠습니다.'],['부장','10/15','9.2 회고 2주는 수련회급엔 빠듯합니다. 3주 검토.']],
     '재정 운영 규정(안) · 초안':[['차기 회장','10/21','7장 연회비 5만(안)이 9/13 임원회 결정(인하 · 분납)과 맞는지 확인 필요.']]}
 };
+/* v102 — 문서 수정 제안(댓글)은 해마다 따로(예시 해의 것이 올해에 보이지 않게) · 시트 '매뉴얼제안' 탭에 남음(개정 제안은 그대로, 의견은 '[의견] '을 붙여) */
+const DOCCMT = Object.entries(EX.comments).flatMap(([doc, L]) => L.map(([by, date, text]) => ({doc, by, date, text, rule:false})));
+const cmtRk = () => S.role === '팀장' ? (myKey() || '팀장') : S.role;   // 서버의 '제안자' = 자리 열쇠(셀리더 · 새가족팀장 …)
+const cmtWho = rk => { const L = USERS.filter(u => u.name && u.name !== '(미정)' && (u.role === '팀장' ? u.team : u.role) === rk); return L.length === 1 ? `${rk} ${L[0].name}` : rk; };
+const docCmts = name => DOCCMT.filter(c => c.doc === name).map(c => [c.who || (yearMode() === 'empty' ? cmtWho(c.by) : c.by), c.date, (c.rule ? '[개정 제안] ' : '') + c.text]);
+const DOCLINK = {};   // 원문 링크 — 시트 설정 탭 '원문.<문서 이름>'(관리자가 넣음 · 구글 드라이브 주소만)
+const decList = () => yearMode() !== 'empty' ? EX.decisions : DOCREC.filter(x => x.kind === '회의록' && !x._ver && x.f).sort((a, b) => String(b.date).localeCompare(String(a.date))).flatMap(x => (x.f.decisions || []).filter(r => r && r[0]).map(r => ({date:mdS(x.date), what:r[0]}))).slice(0, 8);   // 올해는 회의록의 결정에서
 
 const TEMPLATES = [
   {id:'retreat', name:'수련회 · 행사 신청 안내', f:['행사명','일시','장소','회비','신청 링크','마감'],
@@ -3586,7 +3593,7 @@ const ROLES = [
   ['예배국장','주일 예배와 수련회 예배, 찬양 · 방송을 맡는 사람.',['찬양 콘티 · 광고 PPT 올리기 (금 18시까지)','예배 정보에 빠진 것이 있으면 대신 넣기','예배일지 확인'],['국 기록 (첫 주)','주담당 사역(기도회 등) 준비','예배 위원 · 팀원 챙기기'],'이번 주 · 작성하기'],
   ['셀리더','셀원을 돌보고 셀 모임을 이끄는 사람 (임기 1년).',['주일에 주간 입력 — 출석 · 경건 · 기도제목','결석했거나 소식이 없는 셀원에게 연락','조사에 답하고 셀원에게도 알리기'],['새가족이 셀에 자리 잡도록 챙기기','행사 때 참석 체크 돕기','어려운 지체는 목양국장에게 알리기'],'우리 셀 · 내 화면'],
   ['새가족팀장','처음 온 사람을 맞이하고 등록 · 교육 · 셀 파송까지 돕는 사람.',['새가족 등록과 교육 체크','이번 주 셀 파송 올리기 (금 18시까지)','새가족 심방 기록'],['파송된 새가족이 잘 정착하는지 살피기','양육 담당 정하기'],'새가족 명부 · 작성하기','팀장','새가족팀장'],
-  ['한가족팀장','오래 못 나온 지체와 어려움을 겪는 지체를, 원래 셀에 둔 채 함께 돌보는 사람.',['돌봄 대상의 출결 확인','연락하고 한 줄 기록, 다음 연락 정하기'],['목양국장과 대상 점검 — 새로 넣기 · 빼기','다시 나오기 시작한 지체는 셀리더와 잇기'],'내 화면 (돌봄 대상)','팀장','한가족팀장'],
+  ['한가족팀장','청년부 안에서 아직 친밀한 관계를 맺지 못했거나, 여러 이유로 교제의 기회가 적어진 지체들에게 먼저 다가가 함께 어울리며, 이들이 공동체 안에서 자연스럽게 교제하고 소속감을 느낄 수 있도록 도움.',['돌봄 대상의 출결 확인','연락하고 한 줄 기록, 다음 연락 정하기'],['목양국장과 대상 점검 — 새로 넣기 · 빼기','다시 나오기 시작한 지체는 셀리더와 잇기'],'내 화면 (돌봄 대상)','팀장','한가족팀장'],
 ];
 const CHANGELOG = [
   ['2026-11-14','','화면 새 단장 · 문화국 · 안내문 정리',[
@@ -4131,7 +4138,7 @@ const staffTable = L => `<table class="ilji stf" style="width:100%;border-collap
 
 /* 3) 직책 설명 — 큰 틀로(회장 11-20: 지엽적인 설명보다 큰 틀. 회장 글은 회장이 쓴 그대로). 담당 기준 창의 카드 머리와 내 역할 카드가 같은 글을 씀
       세부(대리 총괄 · 회장은 실무 X · 괄호 담당 등)는 담당 기준 창 아래 '원칙'에 그대로 있음. 시트(담당 기준 탭 47 ~ 54행)와 ck27.json도 같은 글로 */
-const ROLE1 = {"주담당":"맡은 사역을 기획부터 회고까지 책임지고 이끌어 감.\n준비 과정 전체를 살피며 당일에는 현장 총괄에 집중하고, 사역을 마치면 회고로 다음 해에 이어 줌","회장":"지도목사의 비전을 기반으로 연간 방향성(비전, 계획)을 임원들과 함께 세우며, 한 해 동안 청년부를 이끌어 감.\n실무를 직접 맡기보다 전체 사역과 목양을 이끌어 가며, 핵심 사역(겨울, 여름수련회, 행복나눔축제 등)의 총괄을 맡아 진행함","총무":"청년부의 살림과 행정을 맡아, 임원들의 일이 막힘 없이 이어지도록 받쳐 줌.\n사람이 모이는 자리에 필요한 준비(장소, 신청, 공지, 안전, 물품 등)를 챙기고, 회의와 기록을 관리함","회계":"청년부의 재정을 맡아, 예산을 세우는 일부터 집행과 결산까지 투명하게 관리함.\n사역마다 필요한 재정이 기준에 맞게 쓰이도록 살피고, 교회와 청년부에 재정을 정확히 보고함","목양국장":"셀리더들과 새가족/한가족팀장과 함께 청년 한 사람 한 사람을 돌보며, 모두가 공동체 안에 자리 잡도록 이끌어 감.\n셀, 새가족, 한가족 돌봄을 셀리더 · 팀장과 함께 맡고, 사역마다 기도로 준비하는 일과 청년들의 참여를 셀을 통해 이끎","선교국장":"청년부가 교회 밖을 향하도록 전도와 선교 사역을 이끌어 감.\n매월 노방전도와 군선교를 꾸준히 이어 가고, 사역마다 초청과 외부 기관과의 협력을 맡아 진행함","문화국장":"청년부의 사역을 알리고 기록하며, 함께 누리는 교제와 문화의 자리를 만들어 감.\n홍보물, 제작물, 영상으로 사역을 전하고 남기며, 문화 프로그램을 기획해 청년들이 즐겁게 하나 되도록 도움","예배국장":"청년부의 예배와 집회가 은혜롭게 드려지도록 준비하고 섬김.\n찬양팀 · 방송팀과 함께 찬양, 음향, 자막, 라이브를 맡고, 예배에 서는 섬김이들을 교육하여 세움","각 국장":"맡은 국의 한 해 사역과 팀원을 이끌어 감.\n국의 사역계획과 매뉴얼을 세우고, 기록과 보고로 국의 일이 다음 해로 이어지게 함","관리자":"모든 리더가 다락방을 막힘 없이 쓸 수 있도록 관리함.\n계정과 조직 편성, 해가 바뀔 때의 준비를 맡아 진행함","지도목사":"말씀과 비전으로 청년부의 방향을 세우고, 목양과 사역 전반을 지도함.\n리더교육과 설교로 임원 · 리더를 세우며, 사역마다 담을 뜻을 임원들과 함께 정하고 중요한 결정을 살펴 승인함","부장":"지도목사를 도와 청년부 운영 전반을 살피고, 교회와 청년부를 이어 줌.\n매월 교회학교 월례회의에서 청년부의 재정, 목양, 사역을 보고하며, 임원들이 사역에 집중할 수 있도록 곁에서 도움","셀리더":"맡은 셀의 청년들을 가장 가까이에서 돌보며, 셀 모임을 이끌어 감.\n셀원의 형편과 기도제목을 살펴 목양국장과 나누고, 사역마다 셀원들이 함께하도록 격려함","새가족팀장":"처음 온 청년을 맞이하여, 등록과 교육을 거쳐 셀에 자리 잡기까지 동행함.\n양육 담당과 함께 새가족을 돌보고, 새로 올라오는 신입 청년 맞이를 맡아 진행함","한가족팀장":"오래 나오지 못했거나 어려움을 겪는 청년을, 원래 셀과 함께 돌봄.\n꾸준히 연락하며 형편을 살피고, 다시 공동체로 돌아올 수 있도록 셀리더와 이어 줌"};
+const ROLE1 = {"주담당":"맡은 사역을 기획부터 회고까지 책임지고 이끌어 감.\n준비 과정 전체를 살피며 당일에는 현장 총괄에 집중하고, 사역을 마치면 회고로 다음 해에 이어 줌","회장":"지도목사의 비전을 기반으로 연간 방향성(비전, 계획)을 임원들과 함께 세우며, 한 해 동안 청년부를 이끌어 감.\n실무를 직접 맡기보다 전체 사역과 목양을 이끌어 가며, 핵심 사역(겨울, 여름수련회, 행복나눔축제 등)의 총괄을 맡아 진행함","총무":"청년부의 살림과 행정을 맡아, 임원들의 일이 막힘 없이 이어지도록 받쳐 줌.\n사람이 모이는 자리에 필요한 준비(장소, 신청, 공지, 안전, 물품 등)를 챙기고, 회의와 기록을 관리함","회계":"청년부의 재정을 맡아, 예산을 세우는 일부터 집행과 결산까지 투명하게 관리함.\n사역마다 필요한 재정이 기준에 맞게 쓰이도록 살피고, 교회와 청년부에 재정을 정확히 보고함","목양국장":"셀리더들과 새가족/한가족팀장과 함께 청년 한 사람 한 사람을 돌보며, 모두가 공동체 안에 자리 잡도록 이끌어 감.\n셀, 새가족, 한가족 돌봄을 셀리더 · 팀장과 함께 맡고, 사역마다 기도로 준비하는 일과 청년들의 참여를 셀을 통해 이끎","선교국장":"청년부가 교회 밖을 향하도록 전도와 선교 사역을 이끌어 감.\n매월 노방전도와 군선교를 꾸준히 이어 가고, 사역마다 초청과 외부 기관과의 협력을 맡아 진행함","문화국장":"청년부의 사역을 알리고 기록하며, 함께 누리는 교제와 문화의 자리를 만들어 감.\n홍보물, 제작물, 영상으로 사역을 전하고 남기며, 문화 프로그램을 기획해 청년들이 즐겁게 하나 되도록 도움","예배국장":"청년부의 예배와 집회가 은혜롭게 드려지도록 준비하고 섬김.\n찬양팀 · 방송팀과 함께 찬양, 음향, 자막, 라이브를 맡고, 예배에 서는 섬김이들을 교육하여 세움","각 국장":"맡은 국의 한 해 사역과 팀원을 이끌어 감.\n국의 사역계획과 매뉴얼을 세우고, 기록과 보고로 국의 일이 다음 해로 이어지게 함","관리자":"모든 리더가 다락방을 막힘 없이 쓸 수 있도록 관리함.\n계정과 조직 편성, 해가 바뀔 때의 준비를 맡아 진행함","지도목사":"말씀과 비전으로 청년부의 방향을 세우고, 목양과 사역 전반을 지도함.\n리더교육과 설교로 임원 · 리더를 세우며, 사역마다 담을 뜻을 임원들과 함께 정하고 중요한 결정을 살펴 승인함","부장":"지도목사를 도와 청년부 운영 전반을 살피고, 교회와 청년부를 이어 줌.\n매월 교회학교 월례회의에서 청년부의 재정, 목양, 사역을 보고하며, 임원들이 사역에 집중할 수 있도록 곁에서 도움","셀리더":"맡은 셀의 청년들을 가장 가까이에서 돌보며, 셀 모임을 이끌어 감.\n셀원의 형편과 기도제목을 살펴 목양국장과 나누고, 사역마다 셀원들이 함께하도록 격려함","새가족팀장":"처음 온 청년을 맞이하여, 등록과 교육을 거쳐 셀에 자리 잡기까지 동행함.\n양육 담당과 함께 새가족을 돌보고, 새로 올라오는 신입 청년 맞이를 맡아 진행함","한가족팀장":"청년부 안에서 아직 친밀한 관계를 맺지 못했거나, 여러 이유로 교제의 기회가 적어진 지체들에게 먼저 다가가 함께 어울리며, 이들이 공동체 안에서 자연스럽게 교제하고 소속감을 느낄 수 있도록 도움."};
 const role1Html = k => ROLE1[k] ? esc(ROLE1[k]).replace(/\n/g, '<br>') : '';
 
 /* 4) 인수인계 (v95) — 회장 11-20: "각자 자기 직책의 다락방 사용 안내 + 맡은 사역 · 서류를 잘 설명"
@@ -4831,7 +4838,7 @@ V.pastor = () => { const boss = S.role === '부장';   // v72: 오른쪽 = 숫�
     ${statCard('₩', won(fin().bal), '통장 잔액 (교회 · 회비)')}
     ${boss ? '' : `<div class="card stat link" onclick="go('newfam')"><span class="ic">⊕</span><span><b>새가족 ${NEWFAM.length}</b><small>정착 관찰 ${NEWFAM.filter(f => f.stage === '정착 관찰').length} · 교육 ${NEWFAM.filter(f => f.stage === '교육').length} · 심방 지연 ${visitLate().length}</small></span></div>`}
   </div>`;
-  const dec = `<div class="card"><div class="sechead"><h2 style="font-size:15px">최근 결정</h2><span style="margin-left:auto"></span></div>${EX.decisions.map(d => `<div style="padding:7px 0;border-top:1px solid var(--line);font-size:13px"><span class="note">${d.date}</span> ${d.what}</div>`).join('')}</div>`;
+  const dec = `<div class="card"><div class="sechead"><h2 style="font-size:15px">최근 결정</h2><span style="margin-left:auto"></span></div>${decList().map(d => `<div style="padding:7px 0;border-top:1px solid var(--line);font-size:13px"><span class="note">${esc(d.date)}</span> ${esc(d.what)}</div>`).join('') || '<p class="note" style="margin:6px 0 0">회의록에 결정을 적으면 여기 모입니다.</p>'}</div>`;
   return door('pastor', stats + (boss ? finCard() + attnEvents() + approvalsList() : approvalsList() + attnEvents()) + dec, notesCard() + prayerCard()); };
 
 V.officer = () => {
@@ -6293,7 +6300,7 @@ V.finance = () => {
       <div class="card sec"><div class="sechead"><h2 style="font-size:15px">수입 기록</h2><span class="note" style="margin-left:auto">${INCOME.length}건 · ${won(F.income)}</span>${acct ? `<button class="btn s" onclick="incomeEntry()">+ 수입 입력</button>` : ''}</div><div class="tblwrap"><table class="tbl mtbl"><thead><tr><th>일자</th><th>내용</th><th>종류</th><th>재원</th><th style="text-align:right">금액</th><th>비고</th></tr></thead><tbody>${[...INCOME].sort((a, b) => b.date.localeCompare(a.date)).map(r => `<tr><td data-l="일자" style="white-space:nowrap">${md(r.date).split(' ')[0]}</td><td data-l="내용" class="full"><b>${esc(r.what)}</b></td><td data-l="종류"><small>${incomeKind(r)}</small></td><td data-l="재원">${fundPill(r.fund)}</td><td data-l="금액" style="text-align:right;font-variant-numeric:tabular-nums">${won(r.amt)}</td><td data-l="비고"><small class="note">${r.kind === '후원금' ? `${esc(r.donor || '')}${r.for ? ' · 지정 ' + esc(r.for) : ' · 지정 없음'}` : ''}</small></td></tr>`).join('')}</tbody></table></div></div>`; }
   if (cur === '회비' && acct) { const tot = Object.values(DUES).reduce((a, [n, p]) => [a[0] + n, a[1] + p], [0, 0]);
     body = `<div class="cards">${statCard('₩', `${tot[1]} / ${tot[0]}`, `납부 (${Math.round(100 * tot[1] / tot[0])}%) · 연 10만 원 — 상반기 5만(3월 말) · 하반기 5만(9월 말)`)}${statCard('◷', tot[0] - tot[1] + '명', '미납 — 3월 말 · 9월 말 마감 확인', 'c')}</div>
-      <div class="card">${Object.entries(DUES).map(([c, [n, p]]) => `<div class="hbar" style="grid-template-columns:90px minmax(0,1fr) 160px"><span>${c}</span><div class="bar" style="height:10px"><i style="width:${Math.round(100 * p / n)}%"></i></div><span class="n" style="font-size:12.5px">${p} / ${n}${DUESNAMES[c] ? ` <span class="note">· ${DUESNAMES[c].join(', ')}</span>` : ''}</span></div>`).join('')}
+      <div class="card">${Object.entries(DUES).map(([c, [n, p]]) => `<div class="hbar" style="grid-template-columns:90px minmax(0,1fr) 160px"><span>${c}</span><div class="bar" style="height:10px"><i style="width:${n ? Math.round(100 * p / n) : 0}%"></i></div><span class="n" style="font-size:12.5px">${p} / ${n}${yearMode() !== 'empty' && DUESNAMES[c] ? ` <span class="note">· ${DUESNAMES[c].join(', ')}</span>` : ''}</span></div>`).join('')}
       </div>`; }
   return `<div class="eyebrow">재정</div><div class="sechead"><h2>${cur}</h2><span class="tabs" style="margin-left:auto">${tabs.map(t => `<button class="${cur === t ? 'on' : ''}" onclick="V2.ftab='${t}';render()">${t}</button>`).join('')}</span></div>${body}`;
 };
@@ -6812,21 +6819,21 @@ function docLibrary(){
    <div class="folds" id="dcats" style="margin-bottom:12px">${cats.map(c => { const n = DATA.docs.filter(canSee).filter(d => c === '전체' || catOf(d) === c).length; return `<button type="button" class="fold ${c === cat ? 'on' : ''}" style="--fc:${FOLDC[{'회칙 · 규정':'coral', '시트':'ok', '다락방 폼':'navy', '예시':'warn'}[c]] || FOLDC.grey}" onclick="V2.dcat='${c}';render()"><span>${c}</span><i>${n}</i><small>${{'전체':'모든 자료', '회칙 · 규정':'RULE', '시트':'SHEET', '다락방 폼':'FORM', '매뉴얼':'MANUAL', '예시':'EXAMPLE', '안내':'GUIDE'}[c]}</small></button>`; }).join('')}</div>
    <div class="sechead"><input class="btn" id="docq" style="margin-left:auto;min-width:180px" placeholder="제목 · 내용 검색" value="${esc(q)}" oninput="V2.dq=this.value;clearTimeout(window._dq);window._dq=setTimeout(()=>{render();const k=document.getElementById('docq');k.focus();k.setSelectionRange(k.value.length,k.value.length)},250)"></div>
    <div class="tblwrap"><table class="tbl mtbl"><thead><tr><th></th><th>문서</th><th>주 사용자</th><th>상태</th><th>열람</th><th>제안</th></tr></thead><tbody>
-   ${list.map(d => `<tr class="row" onclick="openDoc(${d.no})"><td class="hide-s"><span class="kind ${kindCls(d)}">${kindTxt(d)}</span></td><td class="tname full"><b>${esc(d.name)}</b><small>${esc(d.purpose).slice(0, 58)}${d.purpose.length > 58 ? '…' : ''}</small></td><td data-l="주 사용자">${esc(d.users.split('·')[0].split('(')[0])}</td><td data-l="상태"><span class="pill ${stat(d)[0]}">${stat(d)[1]}</span></td><td data-l="열람"><span class="pill grey">${aclLabel(d)}</span></td><td data-l="제안">${(EX.comments[d.name] || []).length || ''}</td></tr>`).join('') || '<tr><td colspan="6" class="note">없음</td></tr>'}</tbody></table></div>
+   ${list.map(d => `<tr class="row" onclick="openDoc(${d.no})"><td class="hide-s"><span class="kind ${kindCls(d)}">${kindTxt(d)}</span></td><td class="tname full"><b>${esc(d.name)}</b><small>${esc(d.purpose).slice(0, 58)}${d.purpose.length > 58 ? '…' : ''}</small></td><td data-l="주 사용자">${esc(d.users.split('·')[0].split('(')[0])}</td><td data-l="상태"><span class="pill ${stat(d)[0]}">${stat(d)[1]}</span></td><td data-l="열람"><span class="pill grey">${aclLabel(d)}</span></td><td data-l="제안">${docCmts(d.name).length || ''}</td></tr>`).join('') || '<tr><td colspan="6" class="note">없음</td></tr>'}</tbody></table></div>
    <p class="note" style="margin-top:12px"><a class="more" href="#changelog">다락방 · 문서 변경 이력 ↗</a></p>`;
 };
 function openDoc(no){
-  const d = DATA.docs.find(x => x.no === no), cs = EX.comments[d.name] || []; if (d.kind === '다락방' && no === 20) { docList(); return; }
+  const d = DATA.docs.find(x => x.no === no), cs = docCmts(d.name); if (d.kind === '다락방' && no === 20) { docList(); return; }
   modal(`<div class="head"><div><small>${d.kind} · ${esc(d.path)}</small><h3>${esc(d.name)}</h3><small>${esc(d.users)} · ${esc(d.when)}</small></div><button class="x" onclick="closeModal()">×</button></div>
   <div class="cont"><div class="docbody"><dl><dt>목적</dt><dd>${esc(d.purpose)}</dd><dt>핵심 내용</dt><dd>${esc(d.data)}</dd><dt>하는 일</dt><dd>${esc(d.work)}</dd><dt>연관</dt><dd>${esc(d.links)}</dd></dl></div>
-  <div style="display:flex;gap:8px;margin-bottom:16px"><button class="btn p" onclick="toast('드라이브 링크는 운영 단계에서 연결합니다')">원문 열기 ↗</button></div>
+  <div style="display:flex;gap:8px;margin-bottom:16px"><button class="btn p" onclick="docOrig(${d.no})">원문 열기 ↗</button>${SRV.on && S.role === '마스터' ? `<button class="btn" onclick="docLinkSet(${d.no})">${DOCLINK[d.name] ? '원문 링크 바꾸기' : '원문 링크 넣기'}</button>` : ''}</div>
   <div class="sechead"><h2 style="font-size:15px">수정 제안</h2><span class="note">로그인한 사람만 남길 수 있음${PROPOSALS.filter(x => x.doc === d.name).length ? ` · 임원회 안건 ${PROPOSALS.filter(x => x.doc === d.name).length}건` : ''}</span></div>
   <div id="cmts">${cs.map(cmtRow).join('') || '<p class="note">아직 제안이 없습니다.</p>'}</div>
   <form class="cmtform" id="cmtf" style="flex-wrap:wrap"><input id="cmtin" placeholder="수정 제안이나 질문 — 개정이면 조항 · 바꿀 문구 · 근거를 한 줄로"><button class="btn p">보내기</button>${d.path.includes('00_마스터') && d.kind === '문서' && S.role && tier() <= 1 ? `<label class="note" style="width:100%;display:flex;gap:6px;align-items:center"><input type="checkbox" id="cmtrule"> 규정 개정 제안으로 임원회 안건에 올림 (개정 이력 초안이 됨)</label>` : ''}</form></div>`, () => {
-    document.getElementById('cmtf').onsubmit = e => { e.preventDefault(); const v = document.getElementById('cmtin').value.trim(); if (!v) return; if (!S.role) { toast('로그인해야 남길 수 있습니다'); return; }
+    document.getElementById('cmtf').onsubmit = e => { e.preventDefault(); const v = document.getElementById('cmtin').value.trim(); if (!v) return; if (!S.role) { toast('로그인해야 남길 수 있습니다'); return; } if (S.role === '마스터') { toast('관리자 자리에서는 제안을 남기지 않습니다 — 내 직책으로 들어와 남겨 주세요'); return; }
       const rule = document.getElementById('cmtrule') && document.getElementById('cmtrule').checked;
-      const c = [S.name || S.role, '오늘', (rule ? '[개정 제안] ' : '') + v]; (EX.comments[d.name] = EX.comments[d.name] || []).push(c); document.getElementById('cmts').insertAdjacentHTML('beforeend', cmtRow(c)); document.getElementById('cmtin').value = '';
-      if (rule) { PROPOSALS.push({doc:d.name, text:v, by:S.role, date:md(TODAYISO).split(' ')[0]}); TASKS.push({id:Math.max(0, ...TASKS.map(t => t.id)) + 1, title:`규정 개정 제안 검토 — ${d.name.slice(0, 18)}`, ev:'임원회', owner:'총무', by:S.role, due:nextDow(1), status:'예정'}); document.getElementById('cmtrule').checked = false; toast('임원회 안건에 올렸습니다 — 총무 할 일에도'); } else toast('제안을 남겼습니다'); };
+      const c = [S.name ? `${S.role === '팀장' ? S.team : S.role} ${S.name}` : S.role, mdS(TODAYISO), (rule ? '[개정 제안] ' : '') + v]; DOCCMT.push({doc:d.name, by:cmtRk(), who:c[0], date:c[1], text:v, rule:!!rule}); document.getElementById('cmts').insertAdjacentHTML('beforeend', cmtRow(c)); document.getElementById('cmtin').value = '';
+      if (rule) { PROPOSALS.push({doc:d.name, text:v, by:cmtRk(), date:md(TODAYISO).split(' ')[0]}); TASKS.push({id:Math.max(0, ...TASKS.map(t => t.id)) + 1, title:`규정 개정 제안 검토 — ${d.name.slice(0, 18)}`, ev:'임원회', owner:'총무', by:S.role, due:nextDow(1), status:'예정'}); document.getElementById('cmtrule').checked = false; toast('임원회 안건에 올렸습니다 — 총무 할 일에도'); } else toast('제안을 남겼습니다'); };
   });
 }
 const cmtRow = c => `<div class="cmt"><span class="av">${esc(c[0]).slice(0, 1)}</span><div><b>${esc(c[0])}</b><small>${esc(c[1])}</small><p>${esc(c[2])}</p></div></div>`;
@@ -7187,7 +7194,7 @@ V.login = () => {   // v93 — 한 화면: 자리 탭 + 직책 + 비밀번호. �
   <label>비밀번호 <input id="lpw" name="password" type="password" autocomplete="current-password" placeholder="비밀번호" value="${PW_TEST ? '0000' : ''}"></label>
   <label class="lgkeep"><input type="checkbox" id="lkeep" ${S.keep === false ? '' : 'checked'}><span>이 기기에서 로그인 유지</span></label>
   <button class="btn p">로그인</button></form>
-  <p class="note lghelp">비밀번호를 잊었으면 관리자에게 재발급을 요청하세요.</p></div></div></div>`; };
+  <p class="note lghelp">비밀번호를 잊었으면 관리자에게 재발급을 요청하세요.<span class="lgadm"> · <a href="#" onclick="event.preventDefault();masterLogin()">관리자 로그인</a></span></p></div></div></div>`; };
 function loginSub(){ const r = document.getElementById('lrole'), l = document.getElementById('lsubl'), sub = document.getElementById('lsub'); if (!r) return; const us = USERS.filter(u => u.role === r.value); const multi = us.length > 1; l.hidden = !multi; sub.innerHTML = multi ? us.map(u => `<option value="${u.cell || u.team}">${u.cell ? cnS(u.cell) : u.team}</option>`).join('') : ''; loginName(); }
 function loginName(){ const r = document.getElementById('lrole').value, sub = (document.getElementById('lsub') || {}).value; const u = USERS.find(x => x.role === r && (!sub || x.cell === sub || x.team === sub)) || USERS.find(x => x.role === r); document.getElementById('lname').value = u ? u.name : ''; }
 /* ================================================================ 공통 */
@@ -7398,7 +7405,7 @@ function saveEventEdit27(e){ const g = k => (document.getElementById(k) || {}).v
   else log('사역', '사역 수정', `${e.name} · 장소 · 인원 · 예산`);
   closeModal(); render(); toast(r.due || r.own ? '저장 — 할 일의 마감 · 담당을 기준에서 다시 계산했습니다' : '저장했습니다'); return false; }
 const YSTORE = {mode:'sample', sample:null, empty:{}};
-const YARR = {NOTES:() => NOTES, LOG:() => LOG, PRAY:() => PRAY, EVENTS:() => EVENTS, NEWFAM:() => NEWFAM, VISITS:() => VISITS, CARE:() => CARE, ROUTLOG:() => ROUTLOG, QUESTIONS:() => QUESTIONS, ARCHIVE:() => ARCHIVE, DECIDE:() => DECIDE, PROPOSALS:() => PROPOSALS, TASKS:() => TASKS, SURVEYS:() => SURVEYS, DEADLINES:() => DEADLINES, NOTICES:() => NOTICES, CHURCH:() => CHURCH, MEET:() => MEET, DOCREC:() => DOCREC, LEDGER:() => LEDGER, INCOME:() => INCOME, FUNDMOVES:() => FUNDMOVES, BUDGET_ADJ:() => BUDGET_ADJ, NFVISITS:() => NFVISITS, RECEIPTS:() => RECEIPTS, APPROVALS:() => EX.approvals};
+const YARR = {NOTES:() => NOTES, LOG:() => LOG, PRAY:() => PRAY, EVENTS:() => EVENTS, NEWFAM:() => NEWFAM, VISITS:() => VISITS, CARE:() => CARE, ROUTLOG:() => ROUTLOG, QUESTIONS:() => QUESTIONS, ARCHIVE:() => ARCHIVE, DECIDE:() => DECIDE, PROPOSALS:() => PROPOSALS, TASKS:() => TASKS, SURVEYS:() => SURVEYS, DEADLINES:() => DEADLINES, NOTICES:() => NOTICES, CHURCH:() => CHURCH, MEET:() => MEET, DOCREC:() => DOCREC, LEDGER:() => LEDGER, INCOME:() => INCOME, FUNDMOVES:() => FUNDMOVES, BUDGET_ADJ:() => BUDGET_ADJ, NFVISITS:() => NFVISITS, RECEIPTS:() => RECEIPTS, APPROVALS:() => EX.approvals, DOCCMT:() => DOCCMT, EXDEC:() => EX.decisions};
 function yearPack(){ const P = {}; Object.entries(YARR).forEach(([k, f]) => { P[k] = f().slice(); }); P._cells = Object.fromEntries(Object.entries(CELLS).map(([c, ms]) => [c, ms.slice()])); P._teams = Object.fromEntries(Object.entries(DEPTS).map(([d, D]) => [d, Object.fromEntries(Object.entries(D.teams || {}).map(([t, ms]) => [t, ms.slice()]))])); P._w = WORSHIP.items.map(w => ({done:w.done, value:w.value, vals:(w.vals || []).slice()})); P._sets = [[], [...IMPROVE], [...CLOSED]]; P._ho = JSON.stringify(HANDED); P._pool = POOL.slice(); return P; }
 function yearLoad(P){ Object.entries(YARR).forEach(([k, f]) => { const a = f(); a.splice(0, a.length, ...(P[k] || [])); }); Object.keys(CELLS).forEach(c => CELLS[c].splice(0, CELLS[c].length, ...((P._cells || {})[c] || []))); POOL.splice(0, POOL.length, ...(P._pool || [])); Object.entries(DEPTS).forEach(([d, D]) => Object.keys(D.teams || {}).forEach(t => D.teams[t].splice(0, D.teams[t].length, ...(((P._teams || {})[d] || {})[t] || []))));
   WORSHIP.items.forEach((w, i) => { const x = (P._w || [])[i] || {done:false, value:'', vals:[]}; w.done = x.done; w.value = x.value; if (w.vals) w.vals = x.vals.slice(); }); [null, IMPROVE, CLOSED].forEach((st, i) => { if (!st) return; st.clear(); ((P._sets || [])[i] || []).forEach(v => st.add(v)); }); Object.keys(HANDED).forEach(k => delete HANDED[k]); Object.assign(HANDED, JSON.parse(P._ho || '{}')); }
@@ -8271,7 +8278,7 @@ function sheetTabs(lite){
   tab(F1, '국팀', '노랑', '다락방', '국 · 팀의 역할과 맡은 사람(비면 공석)', ['국', '팀', '역할', '교적부 ID', '이름', '시작', '종료', '비고'], Object.entries(DEPTS).flatMap(([d, D]) => Object.entries(D.teams || {}).flatMap(([t, L]) => L.map(x => [d, t, x.role, x.n ? mid(x.n) : '', N(x.n), N(x.since), '', N(x.note)]))));
   const SEC = { intro: '소개', routine: '매주 · 매월', know: '노하우', contact: '연락 · 자료', handover: '인수인계' };
   tab(F1, '국매뉴얼', '노랑', '다락방', '국마다 연도별 판 · 장마다 한 줄', ['국', '연도', '장', '본문', '상태', '승인'], Object.entries(MANUALS).flatMap(([d, M]) => (M.versions || []).flatMap(v => Object.entries(v.sec || {}).map(([k, txt]) => [d, v.year, SEC[k] || k, txt, v.status, N(v.approved)]))));
-  tab(F1, '매뉴얼제안', '노랑', '다락방', '문서 · 매뉴얼을 고치자는 제안', ['문서', '내용', '제안자', '날짜'], PROPOSALS.map(x => [x.doc, x.text, x.by, x.date]));
+  tab(F1, '매뉴얼제안', '노랑', '다락방', '문서 · 매뉴얼을 고치자는 제안', ['문서', '내용', '제안자', '날짜'], PROPOSALS.map(x => [x.doc, x.text, x.by, x.date]).concat(DOCCMT.filter(c => !c.rule).map(c => [c.doc, '[의견] ' + c.text, c.by, c.date])));   // 개정 제안 + 문서 의견('[의견] ')
   tab(F1, '개선과제', '노랑', '다락방', '회고에서 나온 과제 — 다음 해 같은 사역 기획안으로', ['사역', '과제(JSON)', '닫힘(JSON)'], Object.keys({ ...IMPROVE, ...CLOSED }).map(k => [k, J(IMPROVE[k]), J(CLOSED[k])]));
   tab(F1, '상시사역로그', '노랑', '다락방', '', ['일자', '사역명', '담당국', '참석', '참여자들', '지출'], ROUTLOG.map(x => [x.date, x.what, x.dept, x.people, A(x.who), x.spent]));
   tab(F1, '장소', '회색', '관리자', '현장 한 장의 비상 칸이 여기서 채워짐', ['장소명', '주소', '병원 · 약국', '구급함', '대피', '사무실'], PLACES.map(x => [x.name, x.address, x.hospital, x.aid, x.escape, x.office]));
@@ -8377,7 +8384,9 @@ const CODEC = {
   QA: {key:['No'], dec:R => cvList(QUESTIONS, R, q => q.id, r => r['No'], (r, q) => { q.id = CV.n(r['No']); q.kind = CV.s(r['종류']); q.text = CV.s(r['질문']); cvSet(q, 'answer', CV.o(r['답'])); q.by = CV.s(r['질문자']); q.role = CV.s(r['직책']); cvSet(q, 'answeredBy', CV.o(r['답한 직책'])); q.date = CV.s(r['질문일']); cvSet(q, 'date2', CV.o(r['답일'])); q.toFaq = CV.y(r['FAQ 올림']); return q; })},
   교육이력: {key:['No'], dec:R => cvList(EDU, R, e => e.id, r => r['No'], (r, e) => { e.id = CV.n(r['No']); e.year = CV.n(r['연도']); e.date = CV.s(r['날짜']); e.name = CV.s(r['사역명']); e.topics = CV.a(r['주제들']); e.lecturer = CV.s(r['강사']); e.audience = CV.s(r['대상']); cvSet(e, 'people', CV.n(r['인원'])); e.key = CV.a(r['핵심']); cvSet(e, 'response', CV.o(r['반응'])); cvSet(e, 'next', CV.o(r['다음엔'])); e.planned = CV.y(r['예정']); return e; })},
   국팀: {key:['국', '팀', '역할'], dec:R => { Object.values(DEPTS).forEach(D => Object.keys(D.teams || {}).forEach(t => D.teams[t].splice(0))); R.forEach(r => { const D = DEPTS[CV.s(r['국'])]; if (!D) return; const T = (D.teams = D.teams || {})[CV.s(r['팀'])] = (D.teams[CV.s(r['팀'])] || []); T.push(cvSet(cvSet(cvSet({role:CV.s(r['역할'])}, 'n', CV.o(r['이름'])), 'since', CV.o(r['시작'])), 'note', CV.o(r['비고']))); }); }},
-  매뉴얼제안: {key:null, dec:R => PROPOSALS.splice(0, PROPOSALS.length, ...R.map(r => ({doc:CV.s(r['문서']), text:CV.s(r['내용']), by:CV.s(r['제안자']), date:CV.s(r['날짜'])})))},
+  매뉴얼제안: {key:null, dec:R => { const P = [], D = []; R.forEach(r => { const doc = CV.s(r['문서']), t = CV.s(r['내용']), by = CV.s(r['제안자']), date = CV.s(r['날짜']); if (/^\[의견\] /.test(t)) D.push({doc, by, date, text:t.replace(/^\[의견\] /, ''), rule:false}); else { P.push({doc, text:t, by, date}); D.push({doc, by, date, text:t, rule:true}); } });
+    PROPOSALS.splice(0, PROPOSALS.length, ...P); DOCCMT.splice(0, DOCCMT.length, ...D); }},
+  설정: {key:['키'], local:true, dec:R => { Object.keys(DOCLINK).forEach(k => delete DOCLINK[k]); R.forEach(r => { const k = CV.s(r['키']), u = CV.url(r['값']); if (/^원문\./.test(k) && /^https:\/\/(docs|drive)\.google\.com\//.test(u || '')) DOCLINK[k.slice(3)] = u; }); }},   // 원문 링크만 받음(경고등 등 다른 설정은 다락방 것 그대로)
   상시사역로그: {key:null, dec:R => ROUTLOG.splice(0, ROUTLOG.length, ...R.map(r => ({date:CV.s(r['일자']), what:CV.s(r['사역명']), dept:CV.s(r['담당국']), people:CV.n0(r['참석']), who:CV.a(r['참여자들']), spent:CV.n0(r['지출'])})))},
   조직: {key:['연도', 'ID'], local:true, dec:R => { R.filter(r => r['상태'] === '현' && r['사람']).forEach(r => { const id = CV.s(r['ID']), kind = CV.s(r['구분']), u = kind === '셀리더' ? USERS.find(x => x.role === '셀리더' && x.cell === id.replace(/ 셀리더$/, '')) : kind === '팀장' ? USERS.find(x => x.role === '팀장' && x.team === id) : kind === '관리자' ? null : USERS.find(x => x.role === id); if (!u) return; const nm = CV.s(r['사람']); if (u.real && u.real !== nm && ALIAS[u.real] && !ALIAS[nm]) ALIAS[nm] = ALIAS[u.real]; u.real = nm; u.name = nm; if (r['사용자 ID']) u.uid = CV.s(r['사용자 ID']); }); USERS.filter(u => u.role === '셀리더').forEach(u => { const l = LEADERS.find(x => x.group === u.cell); if (l) { if (l.real && l.real !== u.real && ALIAS[l.real] && !ALIAS[u.real]) ALIAS[u.real] = ALIAS[l.real]; l.real = u.real; l.name = u.real; } }); }},
   셀편성: {key:['셀 이름'], local:true, dec:R => { R.filter(r => r['상태'] !== '폐지').forEach(r => { const c = CV.s(r['셀 이름']); if (c && !CELLS[c]) CELLS[c] = []; }); }},
@@ -8418,7 +8427,7 @@ async function api(a, p){
   let j; const t0 = performance.now(); try { const r = await fetch(SRV.url, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(Object.assign({a}, SRV.tok ? {token:SRV.tok} : {}, p || {})), cache:'no-store', redirect:'follow'}); j = await r.json(); }
   catch (e) { j = null; }
   if (j && j.ok && ['login', 'load', 'write', 'merge', 'ver'].includes(a)) { SRV.ms[a] = Math.round(performance.now() - t0); if (j.ms !== undefined) SRV.sv[a] = {ms:j.ms, tm:j.tm || {}}; }   // 걸린 시간(메뉴 끝에 보임) · 서버 안에서 쓴 시간
-  if (j && j.ok && j.ver && j.ver.f) srvVer(j.ver);
+  if (j && j.ok && j.ver && j.ver.f) srvVer(j.ver); if (j && j.sv) SRV.sv0 = String(j.sv).slice(0, 20);
   if (!j || typeof j !== 'object') j = {ok:false, error:'서버에 닿지 않습니다 — 인터넷 연결을 확인해 주세요', code:'net'};
   if (!j.ok && j.code === 'auth' && a !== 'login' && /다시 로그인/.test(j.error || '')) srvGone('로그인이 끝났습니다 — 다시 로그인해 주세요');
   return j;
@@ -8431,7 +8440,7 @@ const srvMyKey = () => myKey() || S.role;
 function srvVer(v){ if (SRV.ver[v.f] === v.old) SRV.ver[v.f] = v.v; }   // 내가 쓴 것만 바뀌었으면 다시 받지 않음   // 조사 응답 · 알림 읽음의 내 몫 열쇠(서버의 seatKey와 같음)
 
 /* 받은 탭을 다락방 자료에 얹음 */
-const CVORDER = ['조직', '셀편성', '교적부', '사역DB', '할일', '청구', '연간일정', '문서', '조사', '승인', '상태변경', '인수인계', '알림', '공지', 'QA', '교육이력', '국팀', '매뉴얼제안', '상시사역로그', '주간', '기도제목', '새가족명부', '새가족심방', '돌봄', '보관함', '심방일지', '장부', '수입', '영수증', '재원변경', '예산조정', '회비현황', '주일예배', '로그'];
+const CVORDER = ['조직', '셀편성', '교적부', '사역DB', '할일', '청구', '연간일정', '문서', '조사', '승인', '상태변경', '인수인계', '알림', '공지', 'QA', '교육이력', '국팀', '매뉴얼제안', '상시사역로그', '주간', '기도제목', '새가족명부', '새가족심방', '돌봄', '보관함', '심방일지', '장부', '수입', '영수증', '재원변경', '예산조정', '회비현황', '주일예배', '로그', '설정'];
 function srvApply(T){ SRV.bad = [];
   CVORDER.forEach(n => { const t = T[n]; if (!t || !CODEC[n]) return; if (t.error) { SRV.bad.push(n); return; }
     const rows = (t.rows || []).map(r => { const o = {}; t.cols.forEach((c, i) => { o[c] = r[i] === undefined || r[i] === null ? '' : r[i]; }); return o; });
@@ -8548,7 +8557,7 @@ function srvPill(){ if (!SRV.on) return; let el = document.getElementById('srvst
   el.hidden = SRV.state !== 'in'; const [cls, l, t] = SRV.loading ? ['', '불러오는 중…', ''] : SRV.busy ? ['', '저장 중…', ''] : SRV.err ? ['warn', '저장 대기', SRV.err] : ['ok', '저장됨', SRV.at || ''];
   el.className = 'srvst ' + cls; el.innerHTML = `<span class="l">${esc(l)}</span>${t ? ` <span class="t">${esc(t)}</span>` : ''}`; el.title = (SRV.err ? SRV.err + ' — ' : '') + '누르면 시트에서 새로 불러옵니다'; el.setAttribute('aria-label', l + ' ' + t);
   const f = document.querySelector('.sbfoot'); if (f) { let m = document.getElementById('srvms'); if (!m) { m = document.createElement('div'); m.id = 'srvms'; m.className = 'note'; m.style.cssText = 'font-size:11px;margin-top:4px'; f.appendChild(m); } const sec = k => SRV.ms[k] === undefined ? '—' : (SRV.ms[k] / 1000).toFixed(1) + '초'; const sv = SRV.sv.login, top = sv ? Object.entries(sv.tm).filter(([k]) => k !== '_').sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => `${k} ${(v / 1000).toFixed(1)}`).join(' · ') : '';
-    m.textContent = SRV.state === 'in' ? `서버 응답 · 로그인 ${sec('login')}${sv ? ` (서버 안 ${(sv.ms / 1000).toFixed(1)}초 — ${top})` : ''} · 불러오기 ${sec('load')} · 저장 ${sec(SRV.ms.write === undefined ? 'merge' : 'write')}` : ''; } }
+    m.textContent = SRV.state === 'in' ? `${SRV.sv0 ? '서버 ' + SRV.sv0 + ' · ' : ''}응답 · 로그인 ${sec('login')}${sv ? ` (서버 안 ${(sv.ms / 1000).toFixed(1)}초 — ${top})` : ''} · 불러오기 ${sec('load')} · 저장 ${sec(SRV.ms.write === undefined ? 'merge' : 'write')}` : ''; } }
 
 /* 다락방 쪽 갈아 끼우기 — 서버가 있을 때만 */
 const _render0 = render;
@@ -8626,6 +8635,22 @@ async function srvAdm(a, id){ const u = (SRV.users || []).find(x => x.id === id)
   SRV.users = null; render();
   if (a === 'reissue') modal(`<div class="head"><div><small>관리자 · 비밀번호 새로 내기</small><h3>${esc(u.name)} — 임시 비밀번호</h3></div><button class="x" onclick="closeModal()">×</button></div><div class="cont"><p id="pwtemp" style="font-size:24px;font-weight:800;letter-spacing:.14em;margin:6px 0 12px">${esc(j.pw)}</p><p class="note">이 창을 닫으면 다시 볼 수 없습니다. 본인에게만 전해 주세요 — 들어온 뒤 메뉴 아래 "비밀번호 바꾸기"에서 바꿉니다.</p></div>`);
   else toast({unlock:'잠금을 풀었습니다', clearVpw:'심방 비밀번호를 지웠습니다 — 본인이 다시 정합니다', state:'바꿨습니다'}[a]); }
+/* 원문 열기 — 관리자가 넣은 드라이브 링크(설정 탭 '원문.<문서 이름>') */
+function docOrig(no){ const d = DATA.docs.find(x => x.no === no); if (!d) return; const u = DOCLINK[d.name];
+  if (u) { window.open(u, '_blank', 'noopener'); return; }
+  if (SRV.on && S.role === '마스터') { docLinkSet(no); return; }
+  toast(SRV.on ? '원문 링크가 아직 없습니다 — 관리자가 넣으면 열립니다' : '드라이브 링크는 운영 단계에서 연결합니다'); }
+function docLinkSet(no){ const d = DATA.docs.find(x => x.no === no); if (!d || !SRV.on || S.role !== '마스터') return; const cur = DOCLINK[d.name] || '';
+  modal(`<div class="head"><div><small>관리자 · 원문 링크</small><h3>${esc(d.name)}</h3></div><button class="x" onclick="closeModal()">×</button></div>
+  <div class="cont"><form class="form" id="dlf"><label>구글 드라이브 · 문서 주소 <input id="dl_u" type="url" placeholder="https://docs.google.com/… 또는 https://drive.google.com/…" value="${esc(cur)}"></label><button class="btn p">저장</button></form>
+  <p class="note" style="margin-top:8px">드라이브에서 파일을 열고 '공유 › 링크 복사'로 받은 주소를 붙여 넣습니다. 리더가 열 수 있게 공유를 '링크가 있는 사용자 — 뷰어'로 두세요(교적 · 심방 같은 민감한 파일은 넣지 않음). 비우고 저장하면 링크를 뺍니다.</p></div>`, () => {
+    document.getElementById('dl_u').focus();
+    document.getElementById('dlf').onsubmit = async e => { e.preventDefault(); const v = document.getElementById('dl_u').value.trim();
+      if (v && !/^https:\/\/(docs|drive)\.google\.com\/[^\s<>"']*$/.test(v)) { toast('구글 드라이브 · 문서 주소만 넣을 수 있습니다'); return; }
+      const k = '원문.' + d.name, j = await api('write', {tab:'설정', op:cur || DOCLINK.hasOwnProperty(d.name) ? 'update' : 'insert', row:{키:k, 값:v, 설명:'원문 링크'}});
+      const j2 = !j.ok && /이미 있는 줄/.test(j.error || '') ? await api('write', {tab:'설정', op:'update', row:{키:k, 값:v}}) : j;
+      if (!j2.ok) { toast(j2.error || '저장하지 못했습니다'); return; }
+      if (v) DOCLINK[d.name] = v; else delete DOCLINK[d.name]; closeModal(); toast(v ? '원문 링크를 넣었습니다' : '원문 링크를 뺐습니다'); openDoc(no); }; }); }
 CHANGELOG.unshift(['2026-11-23', '', '서버 연결 준비 — 시트와 주고받기', [
   '로그인을 서버에서 확인합니다 — 자리(직책 · 셀 · 팀)와 비밀번호만 적고, 이름은 서버가 알려 줍니다',
   '들어오면 시트에서 올해 자료를 불러오고, 바꾼 것은 잠깐 뒤 시트에 저장합니다. 오른쪽 아래 작은 표에 "저장됨 · 저장 중 · 저장 대기"가 보이고, 누르면 새로 불러옵니다',
@@ -8638,6 +8663,11 @@ CHANGELOG.unshift(['2026-11-23', '', '서버 연결 준비 — 시트와 주고�
   '주일 예배의 "콘티 도우미" 단추가 새 콘티 도우미(sein-songlist)로 열립니다',
   '보안 — 다른 사람이 넣은 글이 화면에서 실행되지 않게 막았습니다(꺾쇠 · 따옴표 · &는 비슷한 글자 ＜ ” ’ ＆로 보임) · 링크는 http(s)만 · 서버 말고 다른 곳으로는 보내지 못함 · 남의 쪽 안에 끼우면 열리지 않음',
   '이상한 값이 와도 화면 전체가 멈추지 않게 — 멈추면 그 화면에만 안내',
+  '문서의 수정 제안 · 최근 결정 — 예시 해의 것이 올해에 보이던 것을 고침. 올해 제안은 시트(매뉴얼제안 탭)에 남고, 최근 결정은 회의록에서 모읍니다',
+  '원문 열기 — 관리자가 문서마다 드라이브 링크를 넣으면 열립니다(관리자 화면의 문서 창에 "원문 링크 넣기")',
+  '로그인 화면 아래에 "관리자 로그인" · 메뉴 끝에 서버 판 표시',
+  '로그인 빠르게 — 비밀번호 계산을 서버 안에서 직접(처음 비밀번호 첫 로그인 6초 → 1초 안) · 틀렸을 때 시트를 쓰지 않음 · 사용자 목록 5분 캐시. 멈춘 계정은 비밀번호를 맞히면 "사용이 멈춘 계정"이라고 알려 줌',
+  '한가족팀 설명을 새로 씀',
   '아직 안 되는 것 — 지우기, 영수증 사진 올리기, 심방일지 쓰기(읽기만), 조직 · 사용자 바꾸기(시트에서)']]);
 
 autoBdayNotice();
