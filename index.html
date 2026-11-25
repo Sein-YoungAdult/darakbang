@@ -917,6 +917,14 @@ input[data-won]{font-variant-numeric:tabular-nums}
 .nrow textarea{min-height:46px}
 .unsv{margin:0 0 10px;padding:8px 10px;border-radius:10px;background:#FFF4E0;border:1px solid #F0C36D;font-size:12.5px;line-height:1.55;color:var(--fg)}
 .unsvf{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+/* ===== v107 — 다른 자리로 보기(보기 전용) ===== */
+.pvbar{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:95;display:flex;gap:10px;align-items:center;padding:6px 7px 6px 14px;border-radius:999px;background:#3B2A1A;color:#fff;font-size:12.5px;box-shadow:0 6px 18px rgba(60,30,0,.28);max-width:calc(100vw - 16px)}
+.pvbar span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pvbar .btn{flex:none;min-height:28px;padding:2px 12px}
+@media (max-width:900px){.pvbar{bottom:calc(76px + env(safe-area-inset-bottom))}}
+body.pv .srvst{display:none!important}
+.pvgo{display:block;margin:6px 12px 0;width:calc(100% - 24px)}
+.pvgo[hidden]{display:none}
 .mnwho{display:grid;gap:4px}.mnwhoh{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .notel li{position:relative;padding-left:14px}
 .notel li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;height:5px;border-radius:50%;background:var(--primary);opacity:.75}
@@ -3883,8 +3891,8 @@ function inbox98(){
   if (S.role === '목양국장' && archiveCandidates().length) it.push({id:'archive', pri:1.6, due:TODAYISO, tag:['due','교적부'], title:`보관 제안 ${archiveCandidates().length} — 장결 ${CARE_RULE.archiveMonths}개월 지남: ${archiveCandidates().map(x => x.m.n).join(' · ')}`, meta:'명단에서 빼고 보관함으로. 복원 가능 · 파기는 1년 뒤 관리자', act:`<button class="btn s" onclick="V2.cellv='보관함';go('cell')">보관함</button>`});
   if (['목양국장','지도목사','부장','회장'].includes(S.role)) { const late = visitLate(); if (late.length) it.push({id:'visit', pri:1.4, due:late[0].next, tag:['due','심방'], title:`심방 다음 연락 예정일 지난 건 ${late.length} — ${late.map(v => v.m).join(' · ')}`, meta:ALERT_RULE.visitDays + '일 넘으면 목양국장이 날짜를 다시 잡음 (목양 규정 6장) · 이름은 목사 · 부장 · 회장 · 목양국장만', act:`<button class="btn s" onclick="go('visit')">다시 잡기</button>`}); }
   if (S.role === '목양국장' || myKey() === '새가족팀장') NEWFAM.filter(f => f.stage === '교육' && f.last && days(f.last) <= -42).forEach(f => it.push({id:'nf' + f.n, pri:1.6, due:shift(f.last, 56), tag:['due','새가족'], title:`${f.n} — 교육 중 ${Math.floor(-days(f.last) / 7)}주째 연락 없음`, meta:'8주 넘으면 "연락 두절"로 두고 지도목사에게 보고 (목양 규정 7장)', act:`<button class="btn s" onclick="go('newfam')">명부</button>`}));
-  if (S.role === '회계' && (TODAY.getDate() >= 28 || TODAY.getDate() <= 7) && !CLOSED.has(prevMonth())) it.push({id:'close', pri:1.5, due:shift(TODAYISO, 7), tag:['due','월초'], title:`${MONTHS[prevMonth() - 1]} 전월 정리 — 교회제출 PDF · 영수증 · 잔액 대조`, meta:'매월 첫 주 (재정 규정 · 회계 카드) · 체크 5개면 끝', act:`<button class="btn s p" onclick="monthClose()">시작</button>`});
-  { const dept = deptOfRole(S.role); if (dept && (TODAY.getDate() <= 7 || TODAY.getDate() >= 25) && !deptRecOf(dept, prevYM())) it.push({id:'deptrec', pri:1.6, due:TODAY.getDate() >= 25 ? shift(TODAYISO, 7) : `${TODAYISO.slice(0, 8)}07`, tag:['due','국 기록'], title:`${+prevYM().slice(5)}월 ${dept} 기록 — 세 칸, 5분`, meta:'숫자는 자동 · 임원회 자료와 반기 보고에 바로 들어감', act:`<button class="btn s p" onclick="deptRecordForm('${dept}')">쓰기</button>`}); }
+  if (S.role === '회계' && (TODAY.getDate() >= 28 || TODAY.getDate() <= 7) && !CLOSED.has(prevMonth()) && yrOn(prevYM())) it.push({id:'close', pri:1.5, due:shift(TODAYISO, 7), tag:['due','월초'], title:`${MONTHS[prevMonth() - 1]} 전월 정리 — 교회제출 PDF · 영수증 · 잔액 대조`, meta:'매월 첫 주 (재정 규정 · 회계 카드) · 체크 5개면 끝', act:`<button class="btn s p" onclick="monthClose()">시작</button>`});
+  { const dept = deptOfRole(S.role); if (dept && (TODAY.getDate() <= 7 || TODAY.getDate() >= 25) && !deptRecOf(dept, prevYM()) && yrOn(prevYM())) it.push({id:'deptrec', pri:1.6, due:TODAY.getDate() >= 25 ? shift(TODAYISO, 7) : `${TODAYISO.slice(0, 8)}07`, tag:['due','국 기록'], title:`${+prevYM().slice(5)}월 ${dept} 기록 — 세 칸, 5분`, meta:'숫자는 자동 · 임원회 자료와 반기 보고에 바로 들어감', act:`<button class="btn s p" onclick="deptRecordForm('${dept}')">쓰기</button>`}); }
   { const nm = nextMeet(); if (['회장','총무'].includes(S.role) && nm && days(nm) <= 14 && days(nm) >= -1) it.push({id:'board-' + nm, g:'month', pri:1.7, due:shift(nm, -1), tag:['','임원회'], title:`${MONTHS[+nm.slice(5, 7) - 1]} 임원회 (${mdS(nm)}) 자료 — 안건 · 목양 · 재정 보고 자동`, meta:'막힘 · 승인 대기 · 결정 필요 · 개정 제안이 안건으로, 보고 숫자는 시트에서', act:`<button class="btn s" onclick="boardPack()">열기</button>`}); }
   if ([0, 6].includes(TODAY.getMonth()) && tier() === 1 && !['회장','총무','회계'].includes(S.role)) it.push({id:'f07', g:'month', pri:2, due:'2027-01-14', tag:['','반기'], title:'반기 보고 — 숫자 자동 집계', act:`<button class="btn s" onclick="halfReport()">열기</button>`});
   if (S.role === '총무' && showNext() && !ADMIN.made.includes('사역') && !ck27On()) it.push({id:'mknext', pri:1.2, due:'2026-11-27', tag:['due','연도'], title:'2027 사역 만들기 — 리더 MT 임원 세션에서', meta:'관리자로 로그인(화면 아래 \'관리자\') › 다음 해 만들기. 2027 폴더 · 사역마스터 복사 · 설정 기록', act:`<button class="btn s p" onclick="V2.atab='다음 해 만들기';masterLogin()">관리자 로그인</button>`});
@@ -8940,6 +8948,40 @@ CHANGELOG.unshift(['2026-11-25', '', '알아 둘 것 고치기 · 장소 등록'
   '자료 › 자료집 › 장소에서 장소를 등록하고 고칠 수 있습니다 — 몇 명 · 얼마 · 언제 예약 · 꼭 지킬 것 · 배운 것, 그리고 현장 한 장에 찍히는 병원 · 구급함 · 대피',
   '사역 등록 · 사역 수정 · 기획안의 장소 칸은 등록한 장소에서 고릅니다. 목록에 없는 이름을 적으면 자료집에 자동으로 등록되고, 장소 카드에는 그 장소를 쓰는 사역이 붙습니다',
   '아직 시트에 저장되지 않는 창(예산안 · 전월 정리 · 국 매뉴얼 · 심방 기록 · 연간 보고 서술 · 결재 도장 · 사진)에는 알림 한 줄이 뜹니다',
+]]);
+
+/* ================================================================ v107 (2026-11-25 15:37 회장)
+   ① 다른 자리로 보기 — 회장 · 총무가 다른 자리의 화면을 보기 전용으로(서버 판에서만). 그 자리 비밀번호 없이 봄. 보는 동안에는 저장 · 불러오기를 모두 막고, 끝내면 화면을 새로 열어 내 자리로 돌아옴(보는 동안 화면에서 바뀐 것은 버려짐).
+      새로 받는 자료는 없음 — 내 자리에서 이미 받은 자료로 그 자리 화면을 그릴 뿐이라 볼 수 있는 범위가 넓어지지 않음
+   ② 해가 시작되기 전에는 '○월 국 기록' · '전월 정리'를 지금 할 것에 띄우지 않음(2027 자리인데 2026년 11월 기록을 쓰라고 뜨던 것) */
+const PV = {on:false, label:'', me:null};
+const pvCan = () => srvLive() && !PV.on && !S.arch && ['회장', '총무'].includes(S.role);
+function yrOn(ym){ return yearMode() !== 'empty' || String(ym).slice(0, 4) === String(S.year); }
+function pvPick(){ if (!pvCan()) { noPerm('회장 · 총무'); return; }
+  const L = userSeats().filter(s => s.role !== S.role), grp = [['목사 · 부장', s => ['지도목사', '부장'].includes(s.role)], ['임원', s => OFFICERS.includes(s.role)], ['셀리더', s => s.role === '셀리더'], ['팀장', s => s.role === '팀장']];
+  modal(`<div class="head"><div><small>다른 자리로 보기 · 보기 전용</small><h3>어느 자리 화면을 볼까요?</h3><small>그 자리에서 보이는 화면을 그대로 봅니다. 보는 동안에는 아무것도 저장되지 않고, 끝내면 내 자리로 돌아옵니다.</small></div><button class="x" onclick="closeModal()">×</button></div>
+  <div class="cont" id="pvpick">${grp.map(([h, f]) => { const G = L.filter(f); return G.length ? `<div class="grp" style="margin:6px 0">${h}</div><div style="display:flex;flex-wrap:wrap;gap:6px">${G.map(s => `<button type="button" class="btn s" data-r="${esc(s.role)}" data-s="${esc(s.cell || s.team || '')}" onclick="pvStart(this.dataset.r,this.dataset.s)">${esc(s.role === '셀리더' ? cn(s.cell) : s.label)}${s.name && s.role !== '셀리더' ? ` <small class="note" style="font-weight:400">${esc(s.name)}</small>` : ''}</button>`).join('')}</div>` : ''; }).join('')}
+  <p class="note" style="margin:12px 0 0">내 자리에서 받은 자료로 그립니다. 그 자리에만 가려져 내려오는 칸(예: 셀리더가 보는 다른 셀의 연락처)은 실제보다 더 보일 수 있습니다.</p></div>`); }
+function pvStart(role, sub){ if (!pvCan()) return; if (SRV.busy || srvPending()) { toast('저장하는 중입니다 — 잠시 뒤 다시 눌러 주세요'); srvSync(); return; }
+  const seat = userSeats().find(s => s.role === role && (s.cell || s.team || '') === (sub || '')); if (!seat) return;
+  PV.me = {role:S.role, name:S.name}; PV.on = true; PV.label = role === '셀리더' ? cn(sub) + ' 셀리더' : seat.label;
+  S.role = role; S.cell = role === '셀리더' ? sub : null; S.team = role === '팀장' ? sub : null; S.name = seat.name || role;
+  closeModal(); Object.keys(V2).forEach(k => delete V2[k]); DISMISS.clear(); document.body.classList.add('pv'); pvBar(); go(homeDoor()); render(); }
+function pvBar(){ let b = document.getElementById('pvbar'); if (!PV.on) { if (b) b.remove(); return; } if (!b) { b = document.createElement('div'); b.id = 'pvbar'; b.className = 'pvbar'; b.setAttribute('role', 'status'); document.body.appendChild(b); }
+  b.innerHTML = `<span>보기 전용 — <b>${esc(PV.label)}</b> 화면 · 저장되지 않습니다</span><button type="button" class="btn s" onclick="pvStop()">끝내기</button>`; }
+function pvStop(){ if (!PV.on) return; try { SRV.leaving = true; sessionStorage.setItem('sein_srv_msg', '내 자리로 돌아왔습니다'); } catch (e) {} location.reload(); }
+function pvEntry(){ const w = document.getElementById('who'); if (!w) return; let b = document.getElementById('pvgo'); const can = pvCan();
+  if (!b && can) { b = document.createElement('button'); b.type = 'button'; b.id = 'pvgo'; b.className = 'btn s ghost pvgo'; b.textContent = '다른 자리로 보기'; b.onclick = () => pvPick(); w.insertAdjacentElement('afterend', b); }
+  if (b) b.hidden = !can; }
+/* 보는 동안 서버로 나가는 것을 모두 막음 — 저장(write · merge) · 비밀번호 · 관리자 · 심방 · 불러오기 */
+{ const _api107 = api; api = async function(a){ if (PV.on && !['ver', 'ping', 'me'].includes(a)) { if (a !== 'load') toast('보기 전용입니다 — 저장되지 않습니다'); return {ok:false, error:'보기 전용입니다 — 저장되지 않습니다', code:'pv'}; } return _api107.apply(this, arguments); }; }
+{ const _sync107 = srvSync; srvSync = async function(){ if (PV.on) return; return _sync107.apply(this, arguments); }; }
+{ const _load107 = srvLoad; srvLoad = async function(){ if (PV.on) return false; return _load107.apply(this, arguments); }; }
+{ const _render107 = render; render = function(){ const r = _render107.apply(this, arguments); try { pvEntry(); if (PV.on) pvBar(); } catch (e) {} return r; }; }
+
+CHANGELOG.unshift(['2026-11-25', '', '다른 자리로 보기', [
+  '회장 · 총무는 메뉴의 내 이름 아래 "다른 자리로 보기"로 다른 자리의 화면을 볼 수 있습니다(보기 전용 — 그 자리 비밀번호 없이, 보는 동안에는 저장되지 않음). 처음 맡은 분께 화면을 같이 보며 알려 줄 때 씁니다',
+  '해가 시작되기 전에는 "○월 국 기록" · "전월 정리"가 지금 할 것에 뜨지 않습니다',
 ]]);
 
 autoBdayNotice();
