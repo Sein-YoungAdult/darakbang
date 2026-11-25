@@ -910,6 +910,13 @@ input[type=file]{font:inherit;font-size:12.5px;color:var(--muted);max-width:100%
 input[type=file]::file-selector-button{font:inherit;font-size:12.5px;font-weight:600;color:var(--navy);margin:0 10px 0 0;padding:5px 12px;border:1px solid transparent;border-radius:10px;background:linear-gradient(#FFF6EC,#FFE8D2);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 2.5px 0 var(--edge),0 4px 8px rgba(120,70,20,.10);cursor:pointer}
 input[type=file]::file-selector-button:hover{filter:brightness(1.04)}
 input[data-won]{font-variant-numeric:tabular-nums}
+/* ===== v106 — 알아 둘 것(누가 · 언제) · 장소 · 저장 안 되는 창 알림 ===== */
+.nmk{font-size:11px;color:var(--muted);white-space:nowrap}
+.nrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 6px;align-items:start}
+.nrow .nmk{grid-column:1/-1;white-space:normal}
+.nrow textarea{min-height:46px}
+.unsv{margin:0 0 10px;padding:8px 10px;border-radius:10px;background:#FFF4E0;border:1px solid #F0C36D;font-size:12.5px;line-height:1.55;color:var(--fg)}
+.unsvf{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
 .mnwho{display:grid;gap:4px}.mnwhoh{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .notel li{position:relative;padding-left:14px}
 .notel li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;height:5px;border-radius:50%;background:var(--primary);opacity:.75}
@@ -4111,7 +4118,7 @@ const PLACES = [
 const PHONES = {회장:'010-1234-0001', 총무:'010-1234-0002', 회계:'010-1234-0003', 지도목사:'010-1234-0000', 부장:'010-1234-0009', 목양국장:'010-1234-0004', 선교국장:'010-1234-0005', 문화국장:'010-1234-0006', 예배국장:'010-1234-0007'};   // 예시 — 운영 단계: 사용자 탭 연락처
 const STAFF_ROLES = ['회장','총무','회계','목양국장','선교국장','문화국장','예배국장','새가족팀장','한가족팀장','지도목사','부장','직접 입력'];
 const nameOf = r => { const u = USERS.find(x => x.role === r || x.team === r); return u ? u.name : ''; };
-const phoneOf = r => PHONES[r] || (USERS.some(x => x.team === r) ? '010-1234-00' + (10 + STAFF_ROLES.indexOf(r)) : '');
+const phoneOf = r => PHONES[r] || (typeof SRV !== 'undefined' && SRV.on ? memPhone(nameOf(r)) : USERS.some(x => x.team === r) ? '010-1234-00' + (10 + STAFF_ROLES.indexOf(r)) : '');   // v106 — 서버 연결판은 예시 번호를 쓰지 않음(교적부 번호만)
 const hm = t => { const [h, m] = String(t || '0:0').split(':').map(Number); return h * 60 + (m || 0); };
 const mh = n => `${String(Math.floor(n / 60) % 24).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
 function cueTimes(rows){ let t = hm(rows[0] && rows[0][0] || '13:00'); return rows.map((r, i) => { const start = i === 0 ? hm(r[0] || '13:00') : t; t = start + (+r[1] || 0); return mh(start); }); }
@@ -4370,7 +4377,7 @@ const e_site = id => DOCREC.find(x => x.id === id);
 function staffPDF(id){ const d = DOCREC.find(x => x.id === id), f = d.f, e = EVENTS.find(x => x.name === d.ev) || {}, T = cueTimes(f.rows), P = PLACES.find(p => p.name === f.place) || PLACES[0], after = ckAfter(e);
   modal(`<div class="head"><div><small>실무진 매뉴얼 · 1쪽 · PDF 미리보기</small><h3>${esc(d.ev)}</h3><small>${d.pdf.split(' ')[0].replace('큐시트', '실무진매뉴얼')}</small></div><button class="x" onclick="closeModal()">×</button></div><div class="cont"><style>.modal .box{width:min(980px,100%)}</style>${printShell('실무진 매뉴얼', `${esc(d.ev)} · ${e.date ? md(e.date) + (e.end ? ' ~ ' + md(e.end) : '') : ''}`,
     `<table class="ilji" style="width:100%;border-collapse:collapse;margin-top:10px"><tr><th>장소</th><th>총괄</th><th>안전 담당</th><th>물품 총괄</th></tr><tr><td>${esc(e.place || f.place)}</td><td>${f.lead} ${nameOf(f.lead)} · ${phoneOf(f.lead)}</td><td>${f.safety} ${nameOf(f.safety)} · ${phoneOf(f.safety)}</td><td>${f.gear} ${nameOf(f.gear)}</td></tr></table>
-    <table class="ilji" style="width:100%;border-collapse:collapse;margin-top:10px">${sec('1. 집결 · 이동', f.gather.map(r => `${esc(r[0])} <b>${esc(r[1])}</b> ${esc(r[2])} · ${esc(r[3])}`).join('<br>') || '—')}${sec('2. 담당표', staffInner(f.staff))}${sec('3. 시간표 요약', f.rows.map((r, i) => `<b>${T[i]}</b> ${esc(r[2])} · ${esc(r[3])}`).join('<br>'))}${sec('4. 비상', `연락망: 지도목사 ${phoneOf('지도목사')} · 회장 ${phoneOf('회장')} · 안전 담당 ${phoneOf(f.safety)} · ${esc(P.office)}<br>병원 · 약국: ${esc(P.hospital)}<br>구급함: ${esc(P.aid)}<br>대피 · 집결: ${esc(P.escape)}<br>사고 시: 응급조치 → 지도목사 · 회장 보고 → 보호자 연락 → 회고 보고서에 기록`)}${sec('5. 물품', f.items.map(r => `${esc(r[0])} ${esc(r[1])} · ${esc(r[2])} · ${esc(r[3])}${r[4] ? ' · 반납 ' + esc(r[4]) : ''}`).join('<br>') || '—')}${sec('6. 회고', after.map(r => `${esc(r[2])} — ${r[3]}${e.date ? ' · ' + md(shift(e.date, -7 * r[1])) : ''}`).join('<br>'))}</table>`,
+    <table class="ilji" style="width:100%;border-collapse:collapse;margin-top:10px">${sec('1. 집결 · 이동', f.gather.map(r => `${esc(r[0])} <b>${esc(r[1])}</b> ${esc(r[2])} · ${esc(r[3])}`).join('<br>') || '—')}${sec('2. 담당표', staffInner(f.staff))}${sec('3. 시간표 요약', f.rows.map((r, i) => `<b>${T[i]}</b> ${esc(r[2])} · ${esc(r[3])}`).join('<br>'))}${sec('4. 비상', `연락망: 지도목사 ${phoneOf('지도목사')} · 회장 ${phoneOf('회장')} · 안전 담당 ${phoneOf(f.safety)} · ${esc(P.office)}<br>병원 · 약국: ${esc(P.hospital || '— (자료집 › 장소에서 채우기)')}<br>구급함: ${esc(P.aid || '— (자료집 › 장소에서 채우기)')}<br>대피 · 집결: ${esc(P.escape || '— (자료집 › 장소에서 채우기)')}<br>사고 시: 응급조치 → 지도목사 · 회장 보고 → 보호자 연락 → 회고 보고서에 기록`)}${sec('5. 물품', f.items.map(r => `${esc(r[0])} ${esc(r[1])} · ${esc(r[2])} · ${esc(r[3])}${r[4] ? ' · 반납 ' + esc(r[4]) : ''}`).join('<br>') || '—')}${sec('6. 회고', after.map(r => `${esc(r[2])} — ${r[3]}${e.date ? ' · ' + md(shift(e.date, -7 * r[1])) : ''}`).join('<br>'))}</table>`,
     `담당표에서 직책을 고르면 이름 · 연락처는 다락방이 붙이고(사용자 탭), 셀리더 · 청년 · 그 밖의 사람은 따로 적습니다. 비상은 장소 프로필(${esc(P.name)})에서. 회고는 체크리스트의 회고 단계에서. 운영 단계: 'PDF로 저장' → 4_현장, 로그인 없는 섬김이에게는 PDF로 배포.`)}<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn s" onclick="cuePDF(${d.id})">큐시트</button><button class="btn s" onclick="noticeCopy(${d.id})">참가자 안내 복사</button></div></div>`); }
 function noticeCopy(id){ const d = DOCREC.find(x => x.id === id), f = d.f, T = cueTimes(f.rows), e = EVENTS.find(x => x.name === d.ev) || {}; copy(`[${d.ev} 안내] ${e.date ? md(e.date) : ''}\n` + f.rows.filter(r => r[6]).map((r, i) => `${T[f.rows.indexOf(r)]} ${r[6]}`).join('\n') + `\n장소: ${e.place || f.place}`, '참가자 안내를 복사했습니다 — 단톡에 붙여 넣으세요'); }
 let DOCSEQ = 5;
@@ -7335,7 +7342,7 @@ function ck27Side(e){ const c = e.ck27, can = !S.arch && (['회장','총무'].in
   return `<h3>사역 목록에서</h3><dl><dt>형태</dt><dd>${esc(c.form)}</dd><dt>운영</dt><dd>${c.op === 1 ? '주담당이 운영 — 장소 · 신청 · 물품 · 식사 · 차량까지 주담당이' : '나눠 맡음 — 성격마다 맡는 직책이 정해져 있음'}</dd><dt>준비 시작</dt><dd>${e.prep ? md(e.prep) : '—'}</dd>${c.fund ? `<dt>재원</dt><dd>${esc(c.fund)}</dd>` : ''}</dl>
     ${c.subs.length ? `<b style="font-size:13px">같이 준비하는 사역</b>${c.subs.map(s => `<div class="carerow" style="align-items:center" data-sub="${esc(s.key)}"><div style="min-width:0"><b>${esc(s.name)}</b>${s.state !== '확정' ? ` <span class="pill warn" style="font-size:10px">${esc(s.state)}</span>` : ''}<small class="note">${md(s.date)}${s.end ? ' ~ ' + md(s.end) : ''} · 할 일은 이 사역 목록 안에 있고, 날짜를 바꾸면 그 줄 마감이 따라갑니다</small></div>${can ? `<button class="btn s ghost" onclick="subMove('${e.id}','${esc(s.key)}')">날짜</button>` : ''}</div>`).join('')}` : ''}
     ${c.grp ? `<b style="font-size:13px;display:block;margin-top:10px">${esc(c.grp)} — 다른 달</b><div class="famchips">${EVENTS.filter(x => (x.ck27 || {}).grp === c.grp).sort((a, b) => a.date.localeCompare(b.date)).map(x => `<a href="#ev-${x.id}" class="${x === e ? 'on' : days(x.end || x.date) < 0 ? 'dn' : ''}" title="${esc(x.name)} · ${md(x.date)}">${pd(x.date).getMonth() + 1}월</a>`).join('')}</div>` : ''}
-    ${c.note ? `<b style="font-size:13px;display:block;margin-top:10px">알아 둘 것</b><ul class="notel">${noteLines(c.note).map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+    ${noteBlock(e)}
     ${(() => { const M = DOCREC.filter(d => d.kind === '회의록' && d.ev === e.name && !d._ver).sort((a, b) => b.date.localeCompare(a.date)), canM = mtCan('사역') && !S.arch; return M.length || canM ? `<b style="font-size:13px;display:block;margin-top:10px" id="evmeet">준비 회의록${M.length ? ' ' + M.length : ''}</b>${M.map(d => `<a class="srow" href="#" onclick="event.preventDefault();minutesPDF(${d.id})"><b>${mdS(d.date)} · ${esc(d.title)}</b><small>결정 ${((d.f || {}).decisions || []).length}건 · ${d.by}</small></a>`).join('')}${canM ? `<button type="button" class="btn s ghost" style="margin-top:6px" onclick="V2.mnEv='${e.id}';minutesForm(null,'사역')">+ 준비 회의록</button>` : ''}` : ''; })()}
     <p class="note" style="margin:10px 0 0"><a class="more" style="margin:0;padding:0;min-height:0" onclick="critView({ev:'${e.id}'})">누가 무엇을 맡나 — 담당 기준 ↗</a></p>`; }
 /* 할 일 줄의 ⓘ — 성격 · 기준 담당 · 마감이 어디서 나왔는지 + 이 줄만 담당 바꾸기 */
@@ -8291,7 +8298,7 @@ function sheetTabs(lite){
   tab(F1, '매뉴얼제안', '노랑', '다락방', '문서 · 매뉴얼을 고치자는 제안', ['문서', '내용', '제안자', '날짜'], PROPOSALS.map(x => [x.doc, x.text, x.by, x.date]).concat(DOCCMT.filter(c => !c.rule).map(c => [c.doc, '[의견] ' + c.text, c.by, c.date])));   // 개정 제안 + 문서 의견('[의견] ')
   tab(F1, '개선과제', '노랑', '다락방', '회고 보고서에서 나온 과제 — 다음 해 같은 사역 기획안으로', ['사역', '과제(JSON)', '닫힘(JSON)'], Object.keys({ ...IMPROVE, ...CLOSED }).map(k => [k, J(IMPROVE[k]), J(CLOSED[k])]));
   tab(F1, '상시사역로그', '노랑', '다락방', '', ['일자', '사역명', '담당국', '참석', '참여자들', '지출'], ROUTLOG.map(x => [x.date, x.what, x.dept, x.people, A(x.who), x.spent]));
-  tab(F1, '장소', '회색', '관리자', '현장 한 장의 비상 칸이 여기서 채워짐', ['장소명', '주소', '병원 · 약국', '구급함', '대피', '사무실'], PLACES.map(x => [x.name, x.address, x.hospital, x.aid, x.escape, x.office]));
+  tab(F1, '장소', '노랑', '다락방', '장소 한 곳이 한 줄 — 자료집 › 장소에서 등록 · 고침. 사역 · 기획안의 장소 칸은 여기서 고르고, 현장 한 장의 비상 칸도 여기서 채워짐. 지우면 상태 칸에 삭제', ['장소명', '주소', '병원 · 약국', '구급함', '대피', '사무실', '구분', '가는 길', '몇 명', '시설', '얼마', '언제 예약', '꼭 지킬 것', '배운 것', '다시 쓸지', '담당국', '썼던 때', '고친 사람', '고친 날', '상태'], PLACES.map(x => [x.name, N(x.address), N(x.hospital), N(x.aid), N(x.escape), N(x.office), N(x.kind), N(x.where), N(x.cap), N(x.fac), N(x.cost), N(x.book), N(x.rule), N(x.lesson), N(x.again), N(x.dept), N(x.used), N(x.by), N(x.at), '']));
   const org = []; USERS.forEach(u => { const kind = ['지도목사', '부장'].includes(u.role) ? '교역 · 부장' : u.role === '셀리더' ? '셀리더' : u.role === '팀장' ? '팀장' : '임원'; org.push([yr, kind, u.role === '셀리더' ? u.cell + ' 셀리더' : u.role === '팀장' ? u.team : u.role, u.role === '셀리더' ? u.cell : u.role === '팀장' ? u.team : u.role, u.name === '(미정)' ? '' : u.name, UID[u.name] || '', deptOfRole(u.role) || '', `${yr}-01-01`, '', '현']); });
   Object.entries(DEPTS).forEach(([d, D]) => { org.push([yr, '국', d, d, '', '', '', `${yr}-01-01`, '', '현']); Object.keys(D.teams || {}).forEach(t => org.push([yr, '팀', d + '/' + t, t, '', '', d, `${yr}-01-01`, '', '현'])); });
   org.push([yr, '관리자', '관리자', '관리자', ADMINS[0].name === '(미정)' ? '' : ADMINS[0].name, '', '', '', '', '현']);
@@ -8791,6 +8798,148 @@ CHANGELOG.unshift(['2026-11-24', '', '국 순서 · 금액 쉼표 · 입력 칸 
   '금액을 적는 칸은 치는 대로 1,000,000처럼 쉼표가 들어갑니다',
   '지출 입력처럼 두 칸이 나란한 줄의 높이를 맞췄고, 사진 · 파일 고르기 단추를 다락방 단추 모양으로 바꿨습니다',
   '할 일 › "내가 요청"에서 내가 한 요청을 지울 수 있습니다(임원 · 청구는 지금처럼 회계 검토로)',
+]]);
+
+/* ================================================================ v106 (2026-11-25 14:02 회장)
+   ① 알아 둘 것 — 사역 보드에서 더하고 · 고치고 · 지움. 고치거나 새로 적은 줄 끝에 누가 · 언제(〔직책 이름 · 날짜〕 — 시트 '알아 둘 것' 칸에 글로 같이 남음). 임원 · 목사 · 부장(서버 2026-11-25h부터 — 그 전 서버에서는 회장 · 총무 · 주담당만)
+   ② 장소 — 자료집의 장소 카드(DATA.places)와 현장 한 장의 비상 프로필(PLACES)을 한 목록으로. 등록 · 고치기 · 지우기. 사역 · 기획안의 장소 칸은 이 목록에서 고르고, 목록에 없는 이름을 적어 저장하면 자동으로 등록됨. 시트 '장소' 탭과 주고받음(서버 h부터)
+   ③ 서버 연결판에서 아직 시트에 저장되지 않는 창(예산안 · 전월 정리 · 국 매뉴얼 · 심방 기록 · 연간 보고 서술)과 결재 도장 · 사진 고르기에 알림 한 줄
+   ④ 서버 연결판에서는 예시 전화번호를 쓰지 않음(현장 한 장의 연락처 — 교적부에 번호가 있으면 그것만) */
+const SRVH = '2026-11-25h';
+const srvAtLeast = v => !(typeof SRV !== 'undefined' && SRV.on) || String(SRV.sv0 || '') >= v;
+const TOPR106 = () => ['지도목사', '부장', ...OFFICERS];
+const meTag = () => String(S.role || '') + (S.name && S.name !== S.role ? ' ' + S.name : '');
+
+/* ---------- ① 알아 둘 것 ---------- */
+const NOTE_RE = /^(.*?)\s*〔([^〔〕]*?) · (\d{4}-\d{2}-\d{2})( 고침)?〕\s*$/;
+function noteParse(line){ const m = String(line || '').match(NOTE_RE); return m ? {t:m[1].trim(), who:m[2].trim(), at:m[3], ed:!!m[4]} : {t:String(line || '').trim(), who:'', at:'', ed:false}; }
+const noteFmt = x => x.who ? `${x.t} 〔${x.who} · ${x.at}${x.ed ? ' 고침' : ''}〕` : x.t;
+function noteRows(s){ s = String(s || ''); if (!s.trim()) return []; const L = CKNOTE[s] || (/\n|〔/.test(s) ? s.split(/\n+/) : noteSplit(s)); return L.map(noteParse).filter(x => x.t); }
+const noteMk = x => x.who ? `<small class="nmk">${esc(x.who)} · ${mdS(x.at)}${x.ed ? ' 고침' : ''}</small>` : '';
+function noteCan(e){ if (!e || !e.ck27 || S.arch || !S.role || S.role === '마스터') return false; return ['회장', '총무'].includes(S.role) || S.role === e.owner || (TOPR106().includes(S.role) && srvAtLeast(SRVH)); }
+function noteBlock(e){ const L = noteRows((e.ck27 || {}).note), can = noteCan(e); if (!L.length && !can) return '';
+  return `<div class="sechead" id="evnote" style="margin:10px 0 0;gap:6px"><b style="font-size:13px">알아 둘 것</b>${can ? `<button type="button" class="btn s ghost" style="margin-left:auto;min-height:26px;padding:1px 8px" onclick="noteEdit('${e.id}')">${L.length ? '고치기' : '＋ 적기'}</button>` : ''}</div>${L.length ? `<ul class="notel">${L.map(x => `<li>${esc(x.t)} ${noteMk(x)}</li>`).join('')}</ul>` : `<p class="note" style="margin:4px 0 0">아직 없습니다 — 겹치는 일정이나 작년에 배운 것처럼, 준비하는 사람이 미리 알아야 할 것을 한 줄씩 적어 둡니다.</p>`}`; }
+function taFit(root){ (root || document).querySelectorAll('textarea').forEach(t => { const fit = () => { t.style.height = 'auto'; t.style.height = Math.min(260, t.scrollHeight + 2) + 'px'; }; if (!t._fit) { t._fit = 1; t.addEventListener('input', fit); } fit(); }); }
+function noteEdit(id){ const e = EVENTS.find(x => String(x.id) === String(id)); if (!e || !e.ck27) return; if (!noteCan(e)) { noPerm('임원 · 목사 · 부장'); return; }
+  const L = noteRows(e.ck27.note); window._noteOrig = L;
+  const row = (x, i) => `<div class="nrow" data-o="${x ? i : ''}"><textarea class="nt" rows="2" placeholder="예: 연습 주일이 군선교와 겹침">${esc(x ? x.t : '')}</textarea><button type="button" class="btn s ghost" aria-label="이 줄 지우기" title="이 줄 지우기" onclick="this.closest('.nrow').remove()">−</button>${x ? (noteMk(x) || '<small class="nmk">처음 사역 목록에서 온 줄</small>') : '<small class="nmk">새 줄 — 저장하면 내 이름 · 오늘 날짜가 붙습니다</small>'}</div>`;
+  window._noteRow = () => row(null, null);
+  modal(`<div class="head"><div><small>사역 보드 · 알아 둘 것</small><h3>${esc(e.name)}</h3><small>한 줄에 한 가지씩. 고치거나 새로 적은 줄 옆에는 직책 · 이름과 날짜가 남습니다.</small></div><button class="x" onclick="closeModal()">×</button></div>
+  <div class="cont"><form class="form" id="ntf" onsubmit="return noteSave('${e.id}')" style="gap:10px"><div id="nt_rows" style="display:grid;gap:10px">${L.map(row).join('') || row(null, null)}</div>
+  <button type="button" class="btn s" id="ntadd" style="justify-self:start" onclick="document.getElementById('nt_rows').insertAdjacentHTML('beforeend', _noteRow());taFit(document.getElementById('ntf'));const t=document.querySelectorAll('#nt_rows .nt');t[t.length-1].focus()">＋ 한 줄</button>
+  <div style="display:flex;gap:8px"><button class="btn p" type="submit">저장</button><button class="btn" type="button" onclick="closeModal()">취소</button></div></form></div>`, () => taFit(document.getElementById('ntf'))); }
+function noteSave(id){ const e = EVENTS.find(x => String(x.id) === String(id)); if (!e || !e.ck27 || !noteCan(e)) return false; const O = window._noteOrig || [], me = meTag(), out = []; let ch = 0, add = 0;
+  document.querySelectorAll('#nt_rows .nrow').forEach(r => { const t = r.querySelector('.nt').value.replace(/[\n〔〕]+/g, ' ').replace(/\s+/g, ' ').trim(); if (!t) return; const o = r.dataset.o === '' ? null : O[+r.dataset.o];
+    if (!o) { out.push({t, who:me, at:TODAYISO, ed:false}); add++; } else if (o.t === t) out.push(o); else { out.push({t, who:me, at:TODAYISO, ed:true}); ch++; } });
+  const del = O.length - out.filter(x => O.includes(x)).length - ch;
+  if (!add && !ch && !del) { closeModal(); toast('바뀐 것이 없습니다'); return false; }
+  const v = out.map(noteFmt).join('\n'); if (v.length > 4500) { toast('글이 너무 깁니다 — 줄을 나누거나 줄여 주세요'); return false; }
+  if (v) e.ck27.note = v; else delete e.ck27.note;
+  log('사역', '알아 둘 것 고침', `${e.name} · 새 줄 ${add} · 고침 ${ch} · 지움 ${del}`); closeModal(); render(); toast('알아 둘 것을 저장했습니다'); return false; }
+
+/* ---------- ② 장소 ---------- */
+const PLK = ['name', 'kind', 'dept', 'again', 'address', 'where', 'cap', 'fac', 'cost', 'book', 'rule', 'lesson', 'used', 'hospital', 'aid', 'escape', 'office', 'by', 'at'];
+const PLKINDS = ['교회 시설', '수련회 숙소', '야외예배 장소', '전도 현장', '부대·기관 시설', '식당 · 카페', '기타'];
+const PLMAP = {name:'장소명', address:'주소', hospital:'병원 · 약국', aid:'구급함', escape:'대피', office:'사무실', kind:'구분', where:'가는 길', cap:'몇 명', fac:'시설', cost:'얼마', book:'언제 예약', rule:'꼭 지킬 것', lesson:'배운 것', again:'다시 쓸지', dept:'담당국', used:'썼던 때', by:'고친 사람', at:'고친 날'};
+function plNorm(p){ PLK.forEach(k => { if (typeof p[k] !== 'string') p[k] = p[k] === undefined || p[k] === null ? '' : String(p[k]); }); return p; }
+const plBase = s => String(s || '').replace(/\s*\(.*$/, '').trim();
+function placeFind(n){ n = String(n || '').trim(); if (!n || n === '—') return null; return PLACES.find(p => p.name === n) || PLACES.find(p => plBase(p.name) === plBase(n)) || null; }
+const plFake = v => /○○|000-0000/.test(String(v || ''));
+/* 다락방에 들어 있던 장소 자료(자료집 카드 10여 곳)를 목록에 얹음 — 이름이 같으면 빈 칸만 채움. 서버 연결판에서는 예시로 넣어 둔 값(○○병원 …)을 비움 */
+function placeMergeEmbedded(){ let n = 0; if (typeof SRV !== 'undefined' && SRV.on) PLACES.forEach(p => { ['address', 'hospital', 'aid', 'escape', 'office'].forEach(k => { if (plFake(p[k])) { p[k] = ''; n++; } }); });
+  ((typeof DATA !== 'undefined' && DATA.places) || []).forEach(d => { let p = placeFind(d.name); if (!p) { p = plNorm({name:String(d.name)}); PLACES.push(p); n++; }
+    ['kind', 'dept', 'again', 'where', 'cap', 'fac', 'cost', 'book', 'rule', 'lesson', 'used'].forEach(k => { const v = d[k]; if (!p[k] && v && v !== '—') { p[k] = String(v); n++; } }); });
+  return n; }
+PLACES.forEach(plNorm); placeMergeEmbedded();
+let PL_WAIT = false;   // 서버 판 — 시트로 아직 옮겨 적지 않았고 내가 회장이 아니면 기다림(화면에만 얹어 보이는 자료를 고치면 시트에 그 줄이 없어 거절되므로)
+const placeCan = () => !S.arch && !!S.role && TOPR106().includes(S.role) && srvAtLeast(SRVH) && !PL_WAIT;
+const placeUse = p => EVENTS.filter(e => e.place && placeFind(e.place) === p);
+
+/* 시트 '장소' 탭 ↔ PLACES. 서버가 옛 판(칸 6개)이면 받기만 하고 보내지 않음 */
+let PL_SEED = false;
+function plSync(on){ const i = SYNC.indexOf('장소'); if (on && i < 0) SYNC.push('장소'); if (!on && i >= 0) SYNC.splice(i, 1); }
+CODEC.장소 = {key:['장소명'], skip:['상태'], dec:R => { const rows = R.filter(r => r['상태'] !== '삭제' && CV.s(r['장소명'])), wide = R.length ? Object.prototype.hasOwnProperty.call(R[0], '구분') : srvAtLeast(SRVH), seeded = rows.some(r => CV.s(r['구분']));
+  cvList(PLACES, rows, p => p.name, r => CV.s(r['장소명']), (r, p) => { Object.entries(PLMAP).forEach(([k, c]) => { if (r[c] !== undefined) p[k] = CV.s(r[c]); }); return plNorm(p); });
+  plSync(wide); PL_SEED = false; PL_WAIT = !seeded && wide && S.role !== '회장';
+  if (!seeded) { if (wide && S.role === '회장') PL_SEED = true; else placeMergeEmbedded(); }   // 아직 옮겨 적지 않은 시트 — 회장이 들어오면 한 번 옮겨 적고(불러온 뒤 placeAfterLoad), 다른 자리는 화면에만 얹어 보여 줌
+  if (!PLACES.length) PLACES.push(plNorm({name:'세인교회'})); }};
+{ const i = CVLOCAL.indexOf('장소'); if (i >= 0) CVLOCAL.splice(i, 1); if (!CVORDER.includes('장소')) CVORDER.splice(Math.max(0, CVORDER.indexOf('설정')), 0, '장소'); }
+function placeAfterLoad(){ if (!PL_SEED) return; PL_SEED = false; const n = placeMergeEmbedded(); if (n) { log('자료집', '장소 자료를 시트로 옮겨 적음', PLACES.length + '곳'); render(); } }
+{ const _srvLoad106 = srvLoad; srvLoad = async function(){ const ok = await _srvLoad106.apply(this, arguments); if (ok) { try { placeAfterLoad(); } catch (e) { console.error('장소', e); } } return ok; }; }
+
+function placeBody(){ const can = placeCan(), ki = k => { const i = PLKINDS.indexOf(k); return i < 0 ? 98 : i; }, L = PLACES.slice().sort((a, b) => (a.kind ? ki(a.kind) : 99) - (b.kind ? ki(b.kind) : 99) || a.name.localeCompare(b.name, 'ko'));
+  const lines = (v, n) => esc(String(v).split('\n').slice(0, n).join('\n'));
+  return `<div class="sechead" style="margin:0 0 10px"><span class="note" style="flex:1 1 240px">사역 · 기획안에서 장소를 고르면 "썼던 때"에 그 사역이 붙습니다. 현장 한 장의 비상 칸(병원 · 구급함 · 대피)도 여기서 옵니다.</span>${can ? `<button class="btn p s" id="plnew" onclick="placeForm()">＋ 장소 등록</button>` : !srvAtLeast(SRVH) ? '<span class="note">서버를 새 판으로 올리면 등록 · 고치기가 열립니다</span>' : PL_WAIT ? '<span class="note">회장이 한 번 로그인하면 장소 자료가 시트로 옮겨지고, 그 뒤에 등록 · 고치기가 열립니다</span>' : ''}</div>
+  <div class="cards" id="plcards">${L.map(p => { const U = placeUse(p), bare = !p.kind && !p.cap && !p.cost && !p.book && !p.rule && !p.where && !p.fac;
+    return `<div class="card pcard" role="button" tabindex="0" data-pl="${esc(p.name)}" onclick="placeForm(this.dataset.pl)" onkeydown="if(event.key==='Enter')placeForm(this.dataset.pl)" style="cursor:pointer"><div class="svtop">${p.kind ? `<span class="pill navy">${esc(p.kind)}</span>` : '<span class="pill warn">구분 없음</span>'}${p.again ? `<span class="pill ${p.again === '○' ? 'ok' : p.again === '✕' ? 'bad' : 'warn'}">다시 ${esc(p.again)}</span>` : ''}</div><h3>${esc(p.name)}</h3>
+    ${bare ? `<p class="note">이름만 등록됨 — 눌러서 아는 만큼 채워 주세요</p>` : ''}${p.cap && p.cap !== '—' ? `<span class="k">몇 명</span><p>${lines(p.cap, 2)}</p>` : ''}${p.cost && p.cost !== '—' ? `<span class="k">얼마</span><p>${lines(p.cost, 2)}</p>` : ''}${p.book && p.book !== '—' ? `<span class="k">언제 예약</span><p>${lines(p.book, 1)}</p>` : ''}${p.rule ? `<span class="k">꼭 지킬 것</span><p>${lines(p.rule, 2)}</p>` : ''}
+    ${p.used || U.length ? `<span class="k">썼던 때</span><p>${esc(p.used)}${U.length ? `${p.used ? '\n' : ''}${S.year}년: ${esc(U.map(e => e.name).join(' · '))}` : ''}</p>` : ''}${!p.hospital && !p.aid && !p.escape ? '<span class="k">현장 한 장 비상 칸이 비어 있음</span>' : ''}${p.by ? `<small class="nmk" style="display:block;margin-top:6px">${esc(p.by)} · ${mdS(p.at)} 고침</small>` : ''}</div>`; }).join('')}</div>`; }
+{ const _kit106 = V.kit; V.kit = () => { const h = _kit106(); if (V2.ktab !== '장소' || !isOfficerUp()) return h; const i = h.indexOf('</span></div>', h.indexOf('class="tabs"')); return i < 0 ? h : h.slice(0, i + 13) + placeBody(); }; }
+
+function placeForm(name){ const p = name ? placeFind(name) : null, can = placeCan(), x = p || plNorm({name:''}), ro = can ? '' : 'disabled', U = p ? placeUse(p) : [];
+  const inp = (l, id, v, ph) => `<label>${l} <input id="${id}" value="${esc(v)}" placeholder="${ph || ''}" maxlength="300" ${ro}></label>`, area = (l, id, v, ph) => `<label>${l} <textarea id="${id}" rows="2" placeholder="${ph || ''}" maxlength="1500" ${ro}>${esc(v)}</textarea></label>`;
+  const opt = (L, v) => L.map(o => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join(''), kinds = ['', ...(x.kind && !PLKINDS.includes(x.kind) ? [x.kind] : []), ...PLKINDS], depts = ['', '전체', '임원', ...Object.keys(DEPTS)];
+  modal(`<div class="head"><div><small>자료집 · 장소 · ${p ? (can ? '고치기' : '보기') : '등록'}</small><h3>${p ? esc(p.name) : '새 장소'}</h3><small>${p && p.by ? `${esc(p.by)} · ${mdS(p.at)} 고침 · ` : ''}${U.length ? `${S.year}년에 쓰는 사역 — ${esc(U.map(e => e.name).join(' · '))}` : '아는 만큼만 적어도 됩니다 — 나머지는 다녀온 뒤에 채웁니다'}</small></div><button class="x" onclick="closeModal()">×</button></div>
+  <div class="cont"><form class="form" id="plf" data-pl="${esc(p ? p.name : '')}" onsubmit="return placeSave(this.dataset.pl)" style="gap:10px">
+    ${p ? '' : `<label>이름 <input id="pf_n" required maxlength="60" placeholder="예: 가나안농군학교"></label>`}
+    <div class="cards c2" style="gap:10px"><label>구분 <select id="pf_k" ${ro}>${opt(kinds, x.kind)}</select></label><label>담당국 <select id="pf_d" ${ro}>${opt(depts.includes(x.dept) ? depts : [x.dept, ...depts], x.dept)}</select></label></div>
+    <div class="cards c2" style="gap:10px">${inp('주소', 'pf_ad', x.address, '도로명 주소')}<label>다시 쓸지 <select id="pf_a" ${ro}>${opt(['', '○', '△', '✕'], x.again)}</select></label></div>
+    ${area('가는 길 · 주차', 'pf_w', x.where, '차로 얼마 · 버스 진입 · 주차')}
+    <div class="cards c2" style="gap:10px">${area('몇 명', 'pf_c', x.cap, '방 수 · 최대 인원')}${area('얼마', 'pf_co', x.cost, '언제 · 몇 명 · 얼마였는지')}</div>
+    ${area('시설', 'pf_f', x.fac, '예배 공간 · 음향 · 식당 · 샤워')}
+    <div class="cards c2" style="gap:10px">${area('언제 예약', 'pf_b', x.book, '누구에게 · 몇 달 전에')}${area('꼭 지킬 것', 'pf_r', x.rule, '')}</div>
+    ${area('배운 것', 'pf_l', x.lesson, '다음에 쓸 사람에게 남기는 말')}
+    ${inp('썼던 때 (지난 해)', 'pf_u', x.used, '예: 2026 겨울수련회 — 올해 것은 사역에서 고르면 자동으로 붙습니다')}
+    <div class="grp" style="margin:4px 0 0">현장 한 장에 찍히는 비상 정보</div>
+    <div class="cards c2" style="gap:10px">${inp('병원 · 약국', 'pf_h', x.hospital, '가까운 응급실 · 걸리는 시간')}${inp('구급함', 'pf_ai', x.aid, '어디에 있는지')}</div>
+    <div class="cards c2" style="gap:10px">${inp('대피 · 집결', 'pf_e', x.escape, '')}${inp('사무실 · 연락처', 'pf_o', x.office, '')}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${can ? `<button class="btn p" type="submit">저장</button>` : ''}<button class="btn" type="button" onclick="closeModal()">${can ? '취소' : '닫기'}</button>${p && can ? `<button class="btn ghost" type="button" style="margin-left:auto;color:var(--bad)" onclick="placeDel(this.form.dataset.pl)">지우기</button>` : ''}</div></form></div>`, () => { taFit(document.getElementById('plf')); const n = document.getElementById('pf_n'); if (n) n.focus(); }); }
+function placeSave(name){ if (!placeCan()) return false; const g = k => ((document.getElementById(k) || {}).value || '').trim(); let p = name ? placeFind(name) : null;
+  if (!p) { const n = g('pf_n').replace(/[〔〕\n]/g, ' ').replace(/\s+/g, ' ').trim(); if (!n || n === '—') { toast('이름을 적어 주세요'); return false; } const dup = placeFind(n); if (dup) { toast(`이미 있는 장소입니다 — ${dup.name}`); return false; } p = plNorm({name:n}); PLACES.push(p); name = null; }
+  const o = {kind:g('pf_k'), dept:g('pf_d'), again:g('pf_a'), address:g('pf_ad'), where:g('pf_w'), cap:g('pf_c'), cost:g('pf_co'), fac:g('pf_f'), book:g('pf_b'), rule:g('pf_r'), lesson:g('pf_l'), used:g('pf_u'), hospital:g('pf_h'), aid:g('pf_ai'), escape:g('pf_e'), office:g('pf_o')};
+  const ch = Object.keys(o).filter(k => p[k] !== o[k]); if (name && !ch.length) { closeModal(); toast('바뀐 것이 없습니다'); return false; }
+  Object.assign(p, o); p.by = meTag(); p.at = TODAYISO; log('자료집', name ? '장소 고침' : '장소 등록', p.name); closeModal(); V2.ktab = '장소'; render(); toast(name ? '장소를 고쳤습니다' : `${p.name} — 장소를 등록했습니다`); return false; }
+function placeDel(name){ const p = placeFind(name); if (!p || !placeCan()) return; const U = placeUse(p);
+  modal(`<div class="head"><div><small>자료집 · 장소 지우기</small><h3>${esc(p.name)}</h3></div><button class="x" onclick="closeModal()">×</button></div>
+  <div class="cont"><ul class="notel" id="pdelwhat">${U.length ? `<li><b>${S.year}년 사역 ${U.length}개</b>가 이 장소를 쓰고 있습니다(${esc(U.map(e => e.name).join(' · '))}). 지우면 그 사역의 장소 글은 남지만 현장 한 장의 비상 칸은 비게 됩니다.</li>` : '<li>이 장소를 쓰는 올해 사역은 없습니다.</li>'}<li>적어 둔 것(몇 명 · 얼마 · 배운 것)도 목록에서 사라집니다.</li>${srvLive() ? `<li>시트에는 '삭제' 표시로 남아, 같은 이름으로 다시 등록하면 되살아납니다.</li>` : ''}</ul>
+  <div style="display:flex;gap:8px;margin-top:12px"><button class="btn p" id="pdelgo" data-pl="${esc(p.name)}" onclick="placeDelGo(this.dataset.pl)">지우기</button><button class="btn" onclick="closeModal()">취소</button></div></div>`); }
+async function placeDelGo(name){ const p = placeFind(name); if (!p || !placeCan()) return; const btn = document.getElementById('pdelgo');
+  if (PLACES.length <= 1) { toast('마지막 한 곳은 지울 수 없습니다'); return; }
+  if (srvLive()) { if (SRV.busy || srvPending()) { toast('저장하는 중입니다 — 잠시 뒤 다시 눌러 주세요'); srvSync(); return; }
+    if (btn) { btn.disabled = true; btn.textContent = '지우는 중…'; }
+    const j = await api('write', {tab:'장소', op:'delete', rows:[{'장소명':p.name}]});
+    if (!j.ok) { toast(j.error || '지우지 못했습니다'); if (btn) { btn.disabled = false; btn.textContent = '지우기'; } return; } }
+  const k = PLACES.indexOf(p); if (k >= 0) PLACES.splice(k, 1); log('자료집', '장소 지움', p.name); closeModal(); render(); toast('지웠습니다'); }
+
+/* 사역 등록 · 사역 수정 · 기획안의 장소 칸 — 목록에서 고르기(datalist) + 새 이름은 저장할 때 자동 등록 */
+function placeDL(){ let d = document.getElementById('dl_place'); if (!d) { d = document.createElement('datalist'); d.id = 'dl_place'; document.body.appendChild(d); } d.innerHTML = PLACES.map(p => `<option value="${esc(p.name)}">${esc(p.kind)}</option>`).join(''); }
+let PL_PEND = null;
+document.addEventListener('submit', ev => { const el = ev.target && ev.target.querySelector && ev.target.querySelector('#ne_p, #ee_p, #pl_l'); if (el) PL_PEND = el.value.trim(); }, true);
+function placeLearn(){ const n = PL_PEND; PL_PEND = null; if (!n || n === '—' || placeFind(n) || !placeCan()) return; if (!EVENTS.some(e => e.place === n) && !DOCREC.some(d => d.f && d.f.place === n)) return;
+  PLACES.push(plNorm({name:n.slice(0, 60), by:meTag(), at:TODAYISO})); log('자료집', '장소 자동 등록', n); setTimeout(() => toast(`“${n}” — 자료집 › 장소에 등록했습니다(세부는 나중에 채움)`), 2700); }
+{ const _render106 = render; render = function(){ if (PL_PEND !== null) { try { placeLearn(); } catch (e) { console.error(e); } } return _render106.apply(this, arguments); }; }
+
+/* ---------- ③ 아직 시트에 저장되지 않는 것 — 서버 연결판에서만 알림 ---------- */
+const UNSAVED = {budgetDraft:'예산안(세부 줄 · 확정)', monthClose:'전월 정리(체크 · 마감)', manualEdit:'국 매뉴얼', manualNew:'국 매뉴얼', visitForm:'심방 기록', annualReport:'연간 보고의 서술 글'};
+function unsavedNote(what){ if (!srvLive()) return; const c = document.querySelector('#modal .cont'); if (!c || c.querySelector('.unsv')) return;
+  c.insertAdjacentHTML('afterbegin', `<p class="unsv" role="note">⚠︎ <b>${what}</b> — 아직 시트에 저장되지 않습니다. 창을 닫았다가 새로 고치면 사라지니, 지금은 PDF로 남겨 두세요(연결 준비 중).</p>`); }
+Object.keys(UNSAVED).forEach(k => { const f = window[k]; if (typeof f !== 'function') return; window[k] = function(){ const r = f.apply(this, arguments); try { unsavedNote(UNSAVED[k]); } catch (e) {} return r; }; });
+{ const _docOk106 = docOk; docOk = function(){ const r = _docOk106.apply(this, arguments); if (srvLive()) toast('도장은 찍혔지만 아직 시트에 저장되지 않습니다 — 새로 고치면 지워집니다(연결 준비 중)'); return r; }; }
+{ const _modal106 = modal; modal = function(){ const r = _modal106.apply(this, arguments); const m = document.getElementById('modal'); if (!m) return r;
+    ['ne_p', 'ee_p', 'pl_l'].forEach(id => { const el = m.querySelector('#' + id); if (!el) return; placeDL(); el.setAttribute('list', 'dl_place'); el.setAttribute('autocomplete', 'off'); if (!el.placeholder) el.placeholder = '목록에서 고르거나 새로 적기';
+      if (id === 'ne_p' && el.value === '본당') { const c = placeFind('세인교회'); el.value = c ? c.name : ''; } el.addEventListener('focus', () => { if (el.value === '—') el.select(); }); });
+    if (srvLive() && !m.querySelector('.unsvf')) { const f = m.querySelector('input[type=file]'); if (f) { const l = f.closest('label') || f.parentElement, host = (l && l.closest('.two, .cards')) || l; if (host) host.insertAdjacentHTML('afterend', '<small class="unsvf">사진 · 파일은 아직 드라이브에 올라가지 않습니다 — 이 기기에서만 보이니 원본을 따로 두세요</small>'); } }   // 두 칸 줄 맞춤을 건드리지 않게 줄 아래에
+    return r; }; }
+
+/* ---------- ④ 서버 연결판 — 예시 전화번호를 쓰지 않음 ---------- */
+function memPhone(n){ if (!n) return ''; const m = cvMem().map(x => x[1]).find(x => x.n === n); return m && m.phone ? String(m.phone) : ''; }
+if (typeof SRV !== 'undefined' && SRV.on) Object.keys(PHONES).forEach(k => delete PHONES[k]);
+
+CHANGELOG.unshift(['2026-11-25', '', '알아 둘 것 고치기 · 장소 등록', [
+  '사역 보드의 "알아 둘 것"을 그 자리에서 더하고 고칠 수 있습니다(임원 · 목사 · 부장). 고치거나 새로 적은 줄 옆에는 직책 · 이름과 날짜가 남습니다',
+  '자료 › 자료집 › 장소에서 장소를 등록하고 고칠 수 있습니다 — 몇 명 · 얼마 · 언제 예약 · 꼭 지킬 것 · 배운 것, 그리고 현장 한 장에 찍히는 병원 · 구급함 · 대피',
+  '사역 등록 · 사역 수정 · 기획안의 장소 칸은 등록한 장소에서 고릅니다. 목록에 없는 이름을 적으면 자료집에 자동으로 등록되고, 장소 카드에는 그 장소를 쓰는 사역이 붙습니다',
+  '아직 시트에 저장되지 않는 창(예산안 · 전월 정리 · 국 매뉴얼 · 심방 기록 · 연간 보고 서술 · 결재 도장 · 사진)에는 알림 한 줄이 뜹니다',
 ]]);
 
 autoBdayNotice();
