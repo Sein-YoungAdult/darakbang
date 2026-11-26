@@ -3340,7 +3340,7 @@ function memberPastePreview(isP){ const cells = Object.keys(CELLS), lines = docu
   document.getElementById('mp_prev').innerHTML = `<div class="tblwrap" style="margin-top:8px"><table class="tbl"><thead><tr><th>이름</th><th>생일</th><th>연락처</th><th>셀</th><th>상태</th><th>등록일</th><th>주소</th><th></th></tr></thead><tbody>${R.map(r => `<tr style="${r.err ? 'opacity:.55' : ''}"><td>${esc(r.n)}</td><td>${r.bday || '—'}</td><td>${esc(r.phone) || '—'}</td><td>${r.cell ? cnS(r.cell) : r.err ? '—' : '미배정'}</td><td>${r.status}</td><td>${r.reg || '—'}</td><td>${esc(r.addr || '') || '—'}</td><td>${r.err ? `<span class="pill bad" style="font-size:10px">${r.err}</span>` : '<span class="pill ok" style="font-size:10px">넣음</span>'}</td></tr>`).join('')}</tbody></table></div><p class="note" style="margin:6px 0 0">${R.filter(r => !r.err).length}명 넣음 · ${R.filter(r => r.err).length}줄 건너뜀. 셀은 "${esc(cells[0] || '은혜셀')}" · "${esc(String(cells[0] || '은혜셀').replace(/셀$/, ''))}" · "${esc(cellLeader(cells[0]) || '○○')} 셀" 어느 것으로 적어도 됩니다.</p>`; }
 const DECIDE = ['겨울수련회 장소 — 연세대 숙박 + 대학교회 vs 가나안농군학교 (12월 임원회)', '리더 MT 숙소 예산 초과분 처리 (20% 미만이면 표시만 · 넘으면 예산 조정)'];
 let PROPOSALS = [{doc:'재정 운영 규정(안)', text:'4.3 영수증 — 사진이 있으면 지출 인정, 실물은 월별 봉투로 제출 (근거: 다락방 영수증 사진 저장 도입)', by:'회계', date:'10/28'}, {doc:'목양 운영 규정(안)', text:'3장 셀 뷰 열 — 생일을 셀리더 뷰에 넣기 (근거: 셀리더 답변 17 "생일 챙기기"), 10장 헌금 명단 전체 열람 (답변 5)', by:'회장', date:'10/30'}];
-const IMPROVE = new Set(), CLOSE = new Set();
+const IMPROVE = new Set(), CLOSE = new Set(), impK = (e, i) => e.id + '#' + i;   // v114 — 번호#줄
 const shift = (iso, n) => { const d = pd(iso); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const nextDow = dow => shift(TODAYISO, ((dow - TODAY.getDay()) + 7) % 7 || 7);   // 다음 요일 (0 일 ~ 6 토)
 const prevMonth = () => TODAY.getDate() >= 25 ? TODAY.getMonth() + 1 : (TODAY.getMonth() === 0 ? 12 : TODAY.getMonth());   // 정리할 달 (1~12): 월말이면 이번 달, 월초면 지난달
@@ -4580,7 +4580,7 @@ function retroForm(evName, d){ if (tier() !== 0 && docGate(d)) return;
   const lrow = (v, i) => `<div style="display:flex;gap:6px;align-items:center"><span class="note" style="width:18px">${i + 1}.</span><input class="ls" value="${esc(v)}" placeholder="다음에 이것만은"><button type="button" class="btn s ghost" onclick="this.parentNode.remove()">−</button></div>`;
   modal(`<div class="head"><div><small>회고 보고서 · ${d ? '저장됨 · ' + d.by : (e.owner || S.role) + ' · 종료 D+2주'}</small><h3>${esc(e.name)}</h3></div><button class="x" onclick="closeModal()">×</button></div>
   <div class="cont"><style>.modal .box{width:min(820px,100%)}</style><form class="form" id="rtf">
-    ${autoBlk('rt_auto', '숫자 — 일시 · 참석 · 예산 대비 · 재원 (사역 보드 · 장부)', `<div class="docbody" style="margin:0;border:0;padding:0"><dl><dt>일시 · 장소</dt><dd>${when} · ${esc(e.place)}</dd><dt>참석</dt><dd>${attTxt(e)}</dd><dt>예산 / 실지출</dt><dd>${won(e.budget)} / ${won(spent)} (${e.budget ? Math.round(100 * spent / e.budget) : 0}%) · ${FUNDS.map(f => `${f} ${won(fundSpent(f, rows))}`).join(' · ')}</dd><dt>항목</dt><dd>${Object.entries(rows.reduce((o, r) => (o[r.cat[2]] = (o[r.cat[2]] || 0) + r.amt, o), {})).map(([k, v]) => `${k} ${won(v)}`).join(' · ') || '장부에 거래 없음'}</dd>${lessons.length ? `<dt>작년 과제 반영</dt><dd>${lessons.map((l, i) => `${IMPROVE.has(e.id + i) ? '✓' : '□'} ${esc(l)}`).join('<br>')}</dd>` : ''}</dl></div>`, (f.inc || {}).numbers)}
+    ${autoBlk('rt_auto', '숫자 — 일시 · 참석 · 예산 대비 · 재원 (사역 보드 · 장부)', `<div class="docbody" style="margin:0;border:0;padding:0"><dl><dt>일시 · 장소</dt><dd>${when} · ${esc(e.place)}</dd><dt>참석</dt><dd>${attTxt(e)}</dd><dt>예산 / 실지출</dt><dd>${won(e.budget)} / ${won(spent)} (${e.budget ? Math.round(100 * spent / e.budget) : 0}%) · ${FUNDS.map(f => `${f} ${won(fundSpent(f, rows))}`).join(' · ')}</dd><dt>항목</dt><dd>${Object.entries(rows.reduce((o, r) => (o[r.cat[2]] = (o[r.cat[2]] || 0) + r.amt, o), {})).map(([k, v]) => `${k} ${won(v)}`).join(' · ') || '장부에 거래 없음'}</dd>${lessons.length ? `<dt>작년 과제 반영</dt><dd>${lessons.map((l, i) => `${IMPROVE.has(impK(e, i)) ? '✓' : '□'} ${esc(l)}`).join('<br>')}</dd>` : ''}</dl></div>`, (f.inc || {}).numbers)}
     ${PG.length ? `<div><b style="font-size:13px">바랐던 것과 실제</b> <span class="note">기획안에 적은 숫자 옆에 실제로 어땠는지</span><div id="rt_res" style="display:grid;gap:6px;margin-top:6px">${PG.map((x, i) => `<div style="display:grid;grid-template-columns:minmax(0,1fr) 130px;gap:6px;align-items:center;font-size:13px"><span>${esc(x[0])} — 바란 만큼 <b>${esc(x[1])}</b></span><input class="rr" value="${esc(((f.results || [])[i] || [])[2] || '')}" placeholder="실제로는"></div>`).join('')}</div></div>` : ''}
     ${docRow('잘된 점', 'rt_g', f.good, '', 'area')}${docRow('아쉬운 점', 'rt_b', f.bad, '', 'area')}
     ${isEdu(e.name) ? `<div class="card" style="border-color:var(--navy)"><b style="font-size:13px">교육 기록</b> <span class="note">특강 · 세미나라서 — 교육 이력에 쌓여 다음 기획의 눈이 됩니다</span><div class="form" style="margin-top:8px;gap:8px"><div><span class="note">주제</span><div class="names" style="margin-top:4px">${EDU_TOPICS.map(t => `<label class="tog" style="min-height:32px;padding:4px 10px"><input type="checkbox" class="ed_t" value="${t}" onchange="this.parentNode.classList.toggle('on',this.checked)"> ${t}</label>`).join('')}</div></div><div class="cards c2" style="gap:8px">${docRow('강사', 'ed_l', '', '')}${docRow('대상 · 인원', 'ed_a', e.people, '')}</div>${docRow('핵심 3줄 (한 줄에 하나)', 'ed_k', '', '', 'area')}${docRow('반응', 'ed_r', '', '질문 · 분위기', '')}${docRow('다음엔', 'ed_n', '', '이어서 다룰 것 · 형식', '')}</div></div>` : ''}
@@ -4628,7 +4628,7 @@ function planPDF99(id){ const d = typeof id === 'object' ? id : DOCREC.find(x =>
       <div class="pcd"><small class="l">지금 어디까지</small>${hasSteps ? `<div class="big">${stage}</div><div class="sub">할 일 ${T}개 중 ${D}개 마침</div><div class="pdots">${steps.map((z, i) => `<span class="${i === cur ? 'now' : ''}" title="${z.nm} ${z.dn} / ${z.n}"><s style="width:${z.n ? Math.round(100 * z.dn / z.n) : 0}%"></s></span>`).join('')}</div><div class="pdl">${steps.map(z => `<span>${z.nm}</span>`).join('')}</div>${nx ? `<div class="pnx"><b>다음</b> ${esc(nx.title)} — ${esc(nx.owner)} · ${mdS(nx.due)}까지</div>` : ''}` : `<div class="big">${e.prep ? mdS(e.prep) + '부터' : '—'}</div><div class="sub">${e.name ? '할 일이 아직 없어요 — 사역을 등록하면 체크리스트가 생깁니다' : '끝난 사역이에요 — 체크리스트 기록 없음'}</div>`}</div>
       <div class="pcd"><small class="l">누가 함께</small><div class="big">${own.length ? own.length + '곳' : '—'}</div><div class="sub">${site && site.f && site.f.staff ? `현장 담당 ${site.f.staff.length}명` : '국 · 팀'}</div><div class="pch">${own.map(([k, v]) => `<span><b>${esc(k)}</b> ${esc(v)}</span>`).join('')}</div></div>
       <div class="pcd"><small class="l">돈은 이렇게</small><div class="big">${won(tot)}원</div><div class="sub">${funds.length === 1 ? '전액 ' + funds[0][0] : funds.map(([k, v]) => `${k} ${won(v)}`).join(' · ')}</div>${bars.length ? `<div class="pbar">${bars.map(([k, v], i) => `<span class="c${i}" style="flex:${Math.max(v, tot * .16)}">${esc(k)} ${short(v)}</span>`).join('')}</div>` : ''}<div class="sub">${L.map(l => `${esc(l.sub)} ${won(l.amt)}${l.what ? ' (' + esc(l.what) + ')' : ''}`).join(' · ')}</div></div></div>
-    <div class="pcr ${risks.length ? '' : 'one'}"><div><small>작년에 배운 것</small>${les.length ? `<ul>${les.map((l, i) => `<li>${IMPROVE.has(e.id + i) ? '<span class="ck">✓</span>' : '□'} ${esc(l)}</li>`).join('')}</ul>` : '처음 하는 사역이에요 — 이번에 배운 것이 내년 이 칸으로 옵니다.'}</div>${risks.length ? `<div><small>마음에 걸리는 것 → 이렇게 대비</small><ul>${risks.map(r => `<li>${esc(r[0])}${r[1] ? ' → ' + esc(r[1]) : ''}</li>`).join('')}</ul></div>` : ''}</div>
+    <div class="pcr ${risks.length ? '' : 'one'}"><div><small>작년에 배운 것</small>${les.length ? `<ul>${les.map((l, i) => `<li>${IMPROVE.has(impK(e, i)) ? '<span class="ck">✓</span>' : '□'} ${esc(l)}</li>`).join('')}</ul>` : '처음 하는 사역이에요 — 이번에 배운 것이 내년 이 칸으로 옵니다.'}</div>${risks.length ? `<div><small>마음에 걸리는 것 → 이렇게 대비</small><ul>${risks.map(r => `<li>${esc(r[0])}${r[1] ? ' → ' + esc(r[1]) : ''}</li>`).join('')}</ul></div>` : ''}</div>
     ${pxH(++n, '끝나고 이랬으면 좋겠어요', '돌아볼 때 다시 꺼내 봅니다')}${goals.length ? `<div class="pho">${goals.map(g => `<div><b>${esc(g[1])}</b><span>${esc(g[0])}</span><small>${esc(g[2] || '')}</small></div>`).join('')}</div>` : '<p class="pe">아직 적지 않았어요</p>'}${f.after ? `<p style="margin:8px 0 0"><b style="color:var(--navy)">그다음은</b> — ${esc(f.after)}</p>` : ''}`,
     sign:[['작성', d.by, md(d.date)], ['임원회', ap ? ap.status : '—', ap ? esc(String(ap.date).replace(ap.status, '').trim()) : ''], ['교회 제출', f.church_sent ? '보냄' : '아직', ''], ['수정', `${(d.edits || []).length}회`, '']],
     after:`<div style="margin-top:8px"><button class="btn s p" onclick="churchDoc(${d.id})">교회 제출용 만들기</button></div>`}}); }
@@ -4650,8 +4650,8 @@ function openForm(code, evName){
   const rows = LEDGER.filter(r => r.cat[1] === e.item), spent = rows.reduce((a, r) => a + r.amt, 0), church = rows.filter(r => r.fund === '교회지원금').reduce((a, r) => a + r.amt, 0);
   const lessons = (e.last && e.last.lessons) || [];
   let txt = '';
-  if (code === 'F01') txt = [`[기획안 — ${e.name}]`, '① 기획 의도: ', `② 일정: ${when} · 준비 시작 ${e.prep ? md(e.prep) : '(실시 ' + (e.prepW || 8) + '주 전)'}`, `③ 예산 매칭: 예산 ${won(e.budget)} = 교회 신청 ____ + 회비 ____ (항목표와 일치 확인)`, `④ 대상 · 인원: ${e.people}`, `⑤ 장소: ${e.place}`, `⑥ 작년 교훈 반영: ${lessons.map((l, i) => `${IMPROVE.has(e.id + i) ? '✓' : '□'} ${l}`).join(' / ') || '(처음 하는 사역)'}`, '⑦ 국별 담당: ', '', '★ 승인 조건: ① ~ ⑥ 채움 + 준비 시작일 (사역 규정 4장) → 임원회 상정'].join('\n');
-  if (code === 'F06') txt = [`[회고 보고서 — ${e.name}]`, `일시 · 장소: ${when} · ${e.place}`, `참석: ${e.people}`, `예산 ${won(e.budget)} / 실지출 ${won(spent)} (${e.budget ? Math.round(100 * spent / e.budget) : 0}%) · 교회 ${won(church)} · 회비 ${won(spent - church)}`, `항목: ${Object.entries(rows.reduce((o, r) => (o[r.cat[2]] = (o[r.cat[2]] || 0) + r.amt, o), {})).map(([k, v]) => `${k} ${won(v)}`).join(' · ') || '장부에 거래 없음'}`, '', '잘된 점:', '- ', '아쉬운 점:', '- ', '개선 과제 (다음 기획안 ⑥으로 넘어감):', '1. ', '2. ', '3. ', '', `작년 과제 반영: ${lessons.map((l, i) => `${IMPROVE.has(e.id + i) ? '반영' : '미반영'} — ${l}`).join(' / ') || '—'}`, '제출: 실시 2주 안 (수련회급 3주) · 임원회 확인 (사역 규정 9장)'].join('\n');
+  if (code === 'F01') txt = [`[기획안 — ${e.name}]`, '① 기획 의도: ', `② 일정: ${when} · 준비 시작 ${e.prep ? md(e.prep) : '(실시 ' + (e.prepW || 8) + '주 전)'}`, `③ 예산 매칭: 예산 ${won(e.budget)} = 교회 신청 ____ + 회비 ____ (항목표와 일치 확인)`, `④ 대상 · 인원: ${e.people}`, `⑤ 장소: ${e.place}`, `⑥ 작년 교훈 반영: ${lessons.map((l, i) => `${IMPROVE.has(impK(e, i)) ? '✓' : '□'} ${l}`).join(' / ') || '(처음 하는 사역)'}`, '⑦ 국별 담당: ', '', '★ 승인 조건: ① ~ ⑥ 채움 + 준비 시작일 (사역 규정 4장) → 임원회 상정'].join('\n');
+  if (code === 'F06') txt = [`[회고 보고서 — ${e.name}]`, `일시 · 장소: ${when} · ${e.place}`, `참석: ${e.people}`, `예산 ${won(e.budget)} / 실지출 ${won(spent)} (${e.budget ? Math.round(100 * spent / e.budget) : 0}%) · 교회 ${won(church)} · 회비 ${won(spent - church)}`, `항목: ${Object.entries(rows.reduce((o, r) => (o[r.cat[2]] = (o[r.cat[2]] || 0) + r.amt, o), {})).map(([k, v]) => `${k} ${won(v)}`).join(' · ') || '장부에 거래 없음'}`, '', '잘된 점:', '- ', '아쉬운 점:', '- ', '개선 과제 (다음 기획안 ⑥으로 넘어감):', '1. ', '2. ', '3. ', '', `작년 과제 반영: ${lessons.map((l, i) => `${IMPROVE.has(impK(e, i)) ? '반영' : '미반영'} — ${l}`).join(' / ') || '—'}`, '제출: 실시 2주 안 (수련회급 3주) · 임원회 확인 (사역 규정 9장)'].join('\n');
   modal(`<div class="head"><div><small>양식 · ${code} ${FORMS[code]} · 드라이브 Docs · Sheets에서 작성</small><h3>${esc(e.name)}</h3></div><button class="x" onclick="closeModal()">×</button></div>
   <div class="cont"><textarea id="formtxt" style="width:100%;min-height:300px;font:inherit;font-size:13px;line-height:1.5;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--inset);color:var(--fg)">${esc(txt)}</textarea>
   <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn p" onclick="copy(document.getElementById('formtxt').value, '복사했습니다 — 드라이브 양식에 붙여 넣으세요')">복사</button><button class="btn" onclick="toast('드라이브 양식(01_양식_매뉴얼/1_양식/${code})은 운영 단계에서 연결')">드라이브 양식 열기 ↗</button><button class="btn" onclick="closeModal()">닫기</button></div>
@@ -5300,7 +5300,7 @@ V.event = id => {
       ${!e.recurring && (!e.ck27 || e.site || TASKS.some(t => t.ev === e.name && /큐시트|현장 한 장/.test(t.title))) ? `<div class="card" id="sitecard"><div class="sechead"><h2 style="font-size:15px">현장 한 장 — 큐시트 · 실무진 매뉴얼</h2>${e.site ? '<span class="pill ok" style="margin-left:auto">저장됨</span>' : ''}</div>
         ${e.site ? `<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn s p" onclick="cuePDF(${e.site.id})">큐시트${days(e.date) === 0 ? ' · 현장 보기' : ''}</button><button class="btn s" onclick="staffPDF(${e.site.id})">실무진 매뉴얼</button><button class="btn s" onclick="noticeCopy(${e.site.id})">참가자 안내 복사</button>${gate(S.role === e.owner || ['회장','총무'].includes(S.role), `<button class="btn s ghost" onclick="siteForm('${esc(e.name)}', e_site(${e.site.id}))">수정</button>`, `주담당(${e.owner}) · 회장 · 총무`)}${docDelCan(e_site(e.site.id)) ? `<button class="btn s ghost" style="color:var(--bad)" onclick="docDel(${e.site.id})">지우기</button>` : ''}</div><p class="note" style="margin:6px 0 0">순서 ${e.site.f.rows.length} · 담당 ${e.site.f.staff.length} · ${e.site.f.place} 비상 정보 · 당일엔 섬김이 첫 화면에</p>` : `${gate(S.role === e.owner || ['회장','총무'].includes(S.role), `<button class="btn s p" onclick="openForm('F03','${esc(e.name)}')">만들기</button>`, `주담당(${e.owner}) · 회장 · 총무`)}`}</div>` : ''}
     </div>
-    <div class="last">${e.last ? `<h3>작년엔 — ${e.last.label}</h3><dl><dt>장소</dt><dd>${e.last.place}</dd><dt>인원</dt><dd>${e.last.people}</dd><dt>돈</dt><dd>${e.last.spent}</dd>${e.last.lead ? `<dt>흐름</dt><dd>${e.last.lead}</dd>` : ''}</dl><b style="font-size:13px">그때 배운 것 → 이번 기획안에</b><div style="display:grid;gap:4px;margin:6px 0 4px">${e.last.lessons.map((l, i) => { const k = e.id + i, on = IMPROVE.has(k); return `<div style="display:flex;gap:8px;align-items:flex-start;font-size:13px"><button class="chk ${on ? 'on' : ''}" style="flex:none" onclick="IMPROVE.${on ? 'delete' : 'add'}('${k}');render()">${on ? '✓' : ''}</button><span style="${on ? 'color:var(--muted)' : ''}">${l}</span></div>`; }).join('')}</div><small class="note">체크 = 개선 과제를 기획안 ⑥에 반영함. 안 한 것은 임원회 안건 "개선 과제 미반영"에 잡힘.</small>`
+    <div class="last">${e.last ? `<h3>작년엔 — ${e.last.label}</h3><dl><dt>장소</dt><dd>${e.last.place}</dd><dt>인원</dt><dd>${e.last.people}</dd><dt>돈</dt><dd>${e.last.spent}</dd>${e.last.lead ? `<dt>흐름</dt><dd>${e.last.lead}</dd>` : ''}</dl><b style="font-size:13px">그때 배운 것 → 이번 기획안에</b><div style="display:grid;gap:4px;margin:6px 0 4px">${e.last.lessons.map((l, i) => { const k = impK(e, i), on = IMPROVE.has(k); return `<div style="display:flex;gap:8px;align-items:flex-start;font-size:13px"><button class="chk ${on ? 'on' : ''}" style="flex:none" onclick="IMPROVE.${on ? 'delete' : 'add'}('${k}');render()">${on ? '✓' : ''}</button><span style="${on ? 'color:var(--muted)' : ''}">${l}</span></div>`; }).join('')}</div><small class="note">체크 = 개선 과제를 기획안 ⑥에 반영함. 안 한 것은 임원회 안건 "개선 과제 미반영"에 잡힘.</small>`
       : e.ck27 ? ck27Side(e) : `<h3>작년엔</h3><p style="margin:0;font-size:13px">처음 하는 사역입니다. 이번 회고가 내년의 '작년엔'이 됩니다.</p>`}</div>
   </div>`;
 };
@@ -5898,13 +5898,13 @@ function bfItems(items){ const op = V2.bfopen, L = items.slice().sort((a, b) => 
 function boardPack(){
   const full = tier() <= 1, tabs = ['안건','국 기록','목양 보고','재정 보고','생각 모음','회의록 초안'];   // 목사 · 부장 · 임원 모두(11-16). 목양 보고 탭은 숫자뿐(이름 없음)
   const cur = tabs.includes(V2.btab) ? V2.btab : tabs[0];
-  const blocked = TASKS.filter(t => st(t) === '막힘'), wait = EX.approvals.filter(a => a.status === '대기' && (a.type !== '상태 변경' || canStatus())), retro = TASKS.filter(t => /회고/.test(t.title) && st(t) === '지연'), unimp = EVENTS.filter(e => e.last && e.last.lessons.some((l, i) => !IMPROVE.has(e.id + i)) && days(e.date) > 0 && days(e.date) < 90), over = TASKS.filter(t => t.type === '청구' && !/예산 내/.test(t.approve || ''));
+  const blocked = TASKS.filter(t => st(t) === '막힘'), wait = EX.approvals.filter(a => a.status === '대기' && (a.type !== '상태 변경' || canStatus())), retro = TASKS.filter(t => /회고/.test(t.title) && st(t) === '지연'), unimp = EVENTS.filter(e => e.last && e.last.lessons.some((l, i) => !IMPROVE.has(impK(e, i))) && days(e.date) > 0 && days(e.date) < 90), over = TASKS.filter(t => t.type === '청구' && !/예산 내/.test(t.approve || ''));
   const cls = {}; Object.values(CELLS).flat().forEach(m => { const k = care(m, pctOf(m))[0]; cls[k] = (cls[k] || 0) + 1; });
   const F = fin(), items = Object.entries(ITEMBUDGET).map(([k, b]) => { const v = spentOf(k); return v ? [k, v, b, Math.round(100 * v / b)] : null; }).filter(Boolean);
   let body = '';
   if (cur === '안건') { const sec = (title, L, tone) => L.length ? `<div class="agsec" data-t="${title}"><div class="agh"><b>${title}</b><span class="pill ${tone || 'grey'}">${L.length}</span></div>${L.map(([who, txt, sub]) => `<div class="agr ${who ? '' : 'nw'}">${who ? `<span class="agw">${esc(who)}</span>` : ''}<span class="agt">${txt}${sub ? `<small>${sub}</small>` : ''}</span></div>`).join('')}</div>` : '';
     const A = [['막힘', blocked.map(t => [t.owner, esc(t.title), esc(t.ev) + (t.block ? ' · ' + esc(t.block) : '')]), 'bad'], ['승인 대기', wait.map(a => [a.owner, esc(a.name), a.type]), 'warn'], ['결정 필요', DECIDE.map(x => ['', esc(x)]), 'coral'], ['회고 보고서 미입력', retro.map(t => [t.owner, esc(t.title), esc(t.ev)]), 'warn'],
-      ['개선 과제 미반영', unimp.map(e => [e.owner, esc(e.name), `작년 과제 ${e.last.lessons.filter((l, i) => !IMPROVE.has(e.id + i)).length}개가 아직 기획안에 안 들어감`])], ['예산 외 지출 보고', over.map(t => [t.byKey || t.by, esc(t.title), `${won(t.amt)}원 · ${grade(t)[0]}`])], ['규정 개정 제안', PROPOSALS.map(x => [x.by, esc(x.text), `${x.doc} · ${x.date}`])]];
+      ['개선 과제 미반영', unimp.map(e => [e.owner, esc(e.name), `작년 과제 ${e.last.lessons.filter((l, i) => !IMPROVE.has(impK(e, i))).length}개가 아직 기획안에 안 들어감`])], ['예산 외 지출 보고', over.map(t => [t.byKey || t.by, esc(t.title), `${won(t.amt)}원 · ${grade(t)[0]}`])], ['규정 개정 제안', PROPOSALS.map(x => [x.by, esc(x.text), `${x.doc} · ${x.date}`])]];
     const none = A.filter(a => !a[1].length).map(a => a[0]);
     body = `<div class="ag">${A.map(a => sec(a[0], a[1], a[2])).join('')}${none.length ? `<p class="note" style="margin:10px 0 0">없음 — ${none.join(' · ')}</p>` : ''}</div>`; }
   if (cur === '목양 보고') body = `<div class="cards c2" style="gap:8px">${Object.entries(cls).map(([k, v]) => statCard('◍', v + '명', k)).join('')}</div>
@@ -6581,7 +6581,7 @@ function planForm(evName, d){ if (docGate(d)) return;
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button type="button" class="btn s" onclick="document.getElementById('pl_lines').insertAdjacentHTML('beforeend', planLineRow({sub:'진행비'}, ${fee}))">＋ 줄</button>${planBd113(e) ? `<button type="button" class="btn s" id="plbd113" data-n="${esc(e.item || e.name)}" onclick="planBdLoad113(this.dataset.n, ${fee})">예산 등록에서 불러오기</button>${fromBd ? '<span class="note" id="plbdn113" style="align-self:center">예산 등록의 줄에서 시작했습니다</span>' : ''}` : ''}${fee ? `<button type="button" class="btn s p" onclick="planPropose()">재원 자동 제안</button><span class="note" style="align-self:center">교회지원금 줄: 대관 → 사례 → 식비 → 홍보 → 물품 순으로 배정액까지</span>` : ''}</div>
       <p class="note" id="pl_sum" data-b="${bud}" data-fee="${fee ? 1 : 0}" style="margin:6px 0 0"></p></div>
     <div class="cards c2" style="gap:10px">${docRow('④ 대상 · 인원', 'pl_p', f.people)}${docRow('⑤ 장소', 'pl_l', f.place)}</div>
-    <div><b style="font-size:13px">⑥ 작년 교훈 반영 (자동)</b><div style="display:grid;gap:4px;margin-top:6px;font-size:13px">${lessons.map((l, i) => `<label class="tog ${IMPROVE.has(e.id + i) ? 'on' : ''}" style="justify-content:flex-start"><input type="checkbox" class="pl_ls" data-i="${i}" ${IMPROVE.has(e.id + i) ? 'checked' : ''}> ${esc(l)}</label>`).join('') || '<span class="note">처음 하는 사역 — 이번 회고가 내년의 ⑥이 됩니다</span>'}</div></div>
+    <div><b style="font-size:13px">⑥ 작년 교훈 반영 (자동)</b><div style="display:grid;gap:4px;margin-top:6px;font-size:13px">${lessons.map((l, i) => `<label class="tog ${IMPROVE.has(impK(e, i)) ? 'on' : ''}" style="justify-content:flex-start"><input type="checkbox" class="pl_ls" data-i="${i}" ${IMPROVE.has(impK(e, i)) ? 'checked' : ''}> ${esc(l)}</label>`).join('') || '<span class="note">처음 하는 사역 — 이번 회고가 내년의 ⑥이 됩니다</span>'}</div></div>
     ${docRow('⑦ 국별 담당', 'pl_o', f.owners, '총무 장소 · 문화 프로그램 · 예배국 예배 · 목양국 조편성', 'area')}
     <div><b style="font-size:13px">걸리는 것 · 대비</b> <span class="note">선택 — 없으면 비워 둡니다</span><div id="pl_risks" style="display:grid;gap:6px;margin-top:6px">${(f.risks || []).map(planRiskRow).join('')}</div><button type="button" class="btn s" style="margin-top:6px" onclick="document.getElementById('pl_risks').insertAdjacentHTML('beforeend', planRiskRow())">＋ 한 줄</button></div>
     ${docRow('그다음은 — 끝난 뒤 이어 갈 것', 'pl_a', f.after, '예: 초청자 → 새가족팀 연결 · 2주 안 회고')}
@@ -6593,7 +6593,7 @@ function planForm(evName, d){ if (docGate(d)) return;
       if (bud && tot !== bud) { toast(`예산표 합계 ${won(tot)} ≠ 사역 예산 ${won(bud)} — 맞춰야 저장됩니다`); return; }
       if (fee && L.some(l => !l.fund)) { toast("재원이 빈 줄이 있습니다 — '재원 자동 제안'을 누르거나 줄마다 골라 주세요"); return; }
       if (!fee) L.forEach(l => l.fund = kindFund);
-      document.querySelectorAll('.pl_ls').forEach(c => { if (c.checked) IMPROVE.add(e.id + +c.dataset.i); else IMPROVE.delete(e.id + +c.dataset.i); });
+      document.querySelectorAll('.pl_ls').forEach(c => { if (c.checked) IMPROVE.add(impK(e, +c.dataset.i)); else IMPROVE.delete(impK(e, +c.dataset.i)); });
       const rec = d || {id:DOCSEQ++, kind:'기획안', title:e.name, date:TODAYISO, by:S.role, ev:e.name, pdf:`4_사역/${e.date ? e.date.slice(5, 7) + '_' + e.date.slice(5).replace('-', '') + '_' : ''}${e.name.replace(/\s/g, '')}/1_기획/${TODAYISO.replace(/-/g, '')}_기획안_${e.name.replace(/\s/g, '')}.pdf`};
       const church = L.filter(l => l.fund === '교회지원금').reduce((a, l) => a + l.amt, 0);
       if (EVENTS.includes(e)) { e.place = g('pl_l'); e.people = g('pl_p'); }   // 사역 카드도 같이
@@ -7662,7 +7662,7 @@ const dkStp = sm => `<td><span class="px-stp">확정</span><small>${sm}</small><
 const dkBox = (labels, cells, lb) => `<table class="px-sg"><tr class="h"><td class="lb" rowspan="2">${lb || '확<br>인'}</td>${labels.map(l => `<td>${l}</td>`).join('')}</tr><tr class="b">${cells.join('')}</tr></table>`;
 const dkPaper = labels => `<table class="px-sg paper"><tr class="h"><td class="lb" rowspan="2">결<br>재</td>${labels.map(l => `<td>${l}</td>`).join('')}</tr><tr class="b">${labels.map(() => '<td></td>').join('')}</tr></table>`;
 const pName = role => nameOf(role) || role;
-function dkOkCell(key, by){ const ok = OKS[key];
+function dkOkCell(key, by){ const ok = okFor114(key, by);
   if (ok) return dkCell(ok.name || pName(ok.role), `${ok.role} · ${mdS(ok.at)}`);
   if (!S.arch && S.role === by) return `<td><button class="btn s p noprint" onclick="docOk('${key}','${by}',this)">결재</button><small class="mu">${by}</small></td>`;
   return `<td><small class="mu">${by}</small></td>`; }
@@ -7697,7 +7697,7 @@ function printShell(title, sub, inner, note, land, opt){ opt = opt || {};
 const pxH = (n, t, tag, auto) => { const tg = String(tag || ''), isA = auto === 'A' || (auto && /^자동/.test(tg)), dsc = tg.replace(/^자동\s*(—|-)?\s*/, ''); return `<h5><i>${n}</i><b>${t}</b>${isA ? '<u>자동</u>' : ''}${dsc ? `<em>${dsc}</em>` : ''}</h5>`; };   // 번호 뒤 점은 CSS(글로 읽을 때는 '1 보고')
 const pxUL = txt => { const L = pxLines(txt); return `<div class="pb">${L.length > 1 ? `<ul class="pl">${L.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : L.length ? esc(L[0]) : '<span class="pe">—</span>'}</div>`; };
 const dkT = (head, rows, cls) => `<table class="pt ${cls || ''}">${head ? `<tr>${head.map(h => { const [t, w] = Array.isArray(h) ? h : [h]; return `<th${w ? ` style="width:${w}"` : ''}>${t}</th>`; }).join('')}</tr>` : ''}${rows.join('')}</table>`;
-const dkNote = (key, label, ph) => S.arch ? '' : `<div class="dknote noprint"><input id="dkn" value="${esc(REPNOTE[key] || '')}" placeholder="${ph || label}" aria-label="${label}"><button class="btn s" onclick="REPNOTE['${key}']=document.getElementById('dkn').value.trim();(V2.dkRe||closeModal)()">${label} 저장</button></div>`;
+const dkNote = (key, label, ph) => S.arch ? '' : `<div class="dknote noprint"><input id="dkn" value="${esc(REPNOTE[key] || '')}" placeholder="${ph || label}" aria-label="${label}"><button class="btn s" onclick="REPNOTE['${key}']=document.getElementById('dkn').value.trim();srvKick111();(V2.dkRe||closeModal)()">${label} 저장</button></div>`;
 const dkWL = n => Array.from({length:n}, (_, i) => `<div class="wl"${i ? '' : ' style="border-top:0"'}></div>`).join('');
 const fmtS = n => (n < 0 ? '−' : '') + won(Math.abs(n));
 
@@ -7964,7 +7964,7 @@ function planPDF(id){ const d = typeof id === 'object' ? id : DOCREC.find(x => x
     : `<div class="pb mu">${e.name ? `준비 시작 ${e.prep ? mdS(e.prep) : '—'} — 사역을 등록하면 체크리스트로 준비 일정이 채워집니다` : '체크리스트 기록이 없는 사역이에요'}</div>`;
   const ownT = dkT([['맡은 곳', '96px'], '하는 일'], own.length ? own.map(([k, v]) => `<tr><td class="k">${esc(k)}</td><td>${esc(v)}</td></tr>`) : ['<tr><td colspan="2" class="mu">아직 적지 않았어요</td></tr>']);
   const budT = dkT([['예산', '64px'], '내용', ['금액', '84px']], (L.length ? L.map(l => `<tr><td class="c">${esc(l.sub)}</td><td>${esc(l.what || '')}${l.fund && funds.length > 1 ? ` <small class="mu">${esc(l.fund)}</small>` : ''}</td><td class="r">${won(l.amt)}</td></tr>`) : []).concat(`<tr class="sum"><td class="c">합계</td><td>${fundTxt}${np && tot ? ` · 1인당 ${won(Math.round(tot / np))}` : ''}</td><td class="r">${won(tot)}</td></tr>`));
-  const lesT = dkT(['작년에 배운 것', ['반영', '44px']], les.length ? les.map((l, i) => `<tr><td>${esc(l)}</td><td class="c">${IMPROVE.has(e.id + i) ? '✓' : '□'}</td></tr>`) : ['<tr><td colspan="2" class="mu">처음 하는 사역 — 올해 회고가 내년 이 칸으로</td></tr>']);
+  const lesT = dkT(['작년에 배운 것', ['반영', '44px']], les.length ? les.map((l, i) => `<tr><td>${esc(l)}</td><td class="c">${IMPROVE.has(impK(e, i)) ? '✓' : '□'}</td></tr>`) : ['<tr><td colspan="2" class="mu">처음 하는 사역 — 올해 회고가 내년 이 칸으로</td></tr>']);
   const rskT = dkT(['마음에 걸리는 것', '이렇게 대비'], risks.length ? risks.map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[1] || '')}</td></tr>`) : ['<tr><td colspan="2" class="mu">적지 않았어요</td></tr>']);
   const flowH = !flow.length ? '' : flow.length <= 7 ? `<div class="pfl">${flow.map(x => `<div class="${x.min >= 30 ? 'm' : ''}" style="flex:${Math.max(x.min || 20, 14)}"><u>${x.min ? x.min + '분' : ''}</u><b>${esc(x.t)}</b></div>`).join('')}</div>`
     : dkT([['#', '28px'], '순서', ['시간', '60px']], flow.map((x, i) => `<tr><td class="c">${i + 1}</td><td>${esc(x.t)}</td><td class="c">${x.min ? x.min + '분' : ''}</td></tr>`));
@@ -8284,7 +8284,9 @@ function sheetTabs(lite){
   tab(F1, '문서', '노랑', '다락방', '다락방 폼으로 쓴 문서 한 줄(칸 내용은 JSON 한 칸)', ['No', '종류', '제목', '사역', '날짜', '작성(직책)', '상태', '칸 내용(JSON)', 'PDF 경로', '고친 기록(JSON)'], DOCREC.map(d => [d.id, d.kind + (d.f && d.f.mt ? ' · ' + d.f.mt : ''), d.title, N(d.ev), d.date, d.by, N(d.status), J(d.f), N(d.pdf), J(d.edits)]));
   tab(F1, '조사', '노랑', '다락방', '참석 · 차량 · 날짜 조사와 응답', ['No', '제목', '종류', '대상', '사역 No', '마감', '만든 직책', '선택지', '응답(JSON)', '신청 페이지', '닫힘'], SURVEYS.map(s => [s.id, s.title, s.kind + (s.car ? ' · 차량' : ''), s.audience, N(s.ev), s.deadline, s.by, A(s.options), J(s.resp), N(s.page), Y(s.closed)]));
   tab(F1, '승인', '노랑', '다락방', '기획안 · 문서 고침 승인. 상태 변경(사람)은 목양마스터의 상태변경 탭(번호는 이 탭과 나눠 씀)', ['No', '이름', '종류', '올린 직책', '날짜', '상태|대기,승인,반려,수정함', '문서 No', '사유', '확인자'], APPROVALS.filter(a => !a.who).map(a => [a.id, a.name, a.type, a.owner, a.date, a.status, N(a.doc), N(a.why), N(a.ok)]));   // v102 — 상태 변경(사람)은 상태변경 탭에만(번호는 같은 줄 번호를 나눠 씀)
-  tab(F1, '인수인계', '노랑', '다락방', '자리마다 연말 인수인계 체크', ['연도', '자리', '체크한 줄(JSON)', '마친 날', '마친 사람'], Object.entries(HANDED).filter(([k, v]) => v && (v.at || Object.keys(v.done || {}).length)).map(([k, v]) => [yr, k, J(v.done || v), N(v.at), N(v.by)]));
+  tab(F1, '인수인계', '노랑', '다락방', '자리마다 연말 인수인계 체크', ['연도', '자리', '체크한 줄(JSON)', '마친 날', '마친 사람', ...(srvAtLeast(SRV26C) ? ['넘긴 사람', '받은 사람', '전하는 말'] : [])], Object.entries(HANDED).filter(([k, v]) => v && (v.at || v.from || v.to || v.memo || Object.keys(v.done || {}).length)).map(([k, v]) => [yr, k, J(v.done || v), N(v.at), N(v.by), ...(srvAtLeast(SRV26C) ? [N(v.from), N(v.to), N(v.memo)] : [])]));
+  tab(F1, '결재', '노랑', '다락방', '문서의 결재 도장 — 목사 · 부장이 다락방에서 찍음. 한 번 찍으면 고치지 않음', OKCOLS114, okRows114());
+  tab(F1, '보고한줄', '노랑', '다락방', '월 보고 · 안건지 · 반기 보고에 손으로 적는 한 줄', NTCOLS114, ntRows114());
   tab(F1, '알림', '노랑', '다락방', '말씀드리기', ['No', '보낸 시각', '보낸 직책', '받는 직책들', '내용', '관련 사역', '읽음(JSON)', '한 줄 답(JSON)'], NOTES.map(n => [n.id, n.date, n.from, A(n.to), n.text, N(n.ev), J(n.read), J(n.reply)]));
   tab(F1, '공지', '노랑', '다락방', '', ['No', '날짜', '보낸 직책', '종류', '내용', '중요'], NOTICES.map(n => [n.id, n.date, n.by, n.kind, n.text, Y(n.important)]));
   tab(F1, 'QA', '노랑', '다락방', '리더 Q&A', ['No', '종류', '질문', '답', '질문자', '직책', '답한 직책', '질문일', '답일', 'FAQ 올림'], QUESTIONS.map(q => [q.id, q.kind, q.text, N(q.answer), q.by, q.role, N(q.answeredBy), q.date, N(q.date2), Y(q.toFaq)]));
@@ -8294,7 +8296,7 @@ function sheetTabs(lite){
   const SEC = { intro: '소개', routine: '매주 · 매월', know: '노하우', contact: '연락 · 자료', handover: '인수인계' };
   tab(F1, '국매뉴얼', '노랑', '다락방', '국마다 연도별 판 · 장마다 한 줄', ['국', '연도', '장', '본문', '상태', '승인'], Object.entries(MANUALS).flatMap(([d, M]) => (M.versions || []).flatMap(v => Object.entries(v.sec || {}).map(([k, txt]) => [d, v.year, SEC[k] || k, txt, v.status, N(v.approved)]))));
   tab(F1, '매뉴얼제안', '노랑', '다락방', '문서 · 매뉴얼을 고치자는 제안', ['문서', '내용', '제안자', '날짜'], PROPOSALS.map(x => [x.doc, x.text, x.by, x.date]).concat(DOCCMT.filter(c => !c.rule).map(c => [c.doc, '[의견] ' + c.text, c.by, c.date])));   // 개정 제안 + 문서 의견('[의견] ')
-  tab(F1, '개선과제', '노랑', '다락방', '회고 보고서에서 나온 과제 — 다음 해 같은 사역 기획안으로', ['사역', '과제(JSON)', '닫힘(JSON)'], Object.keys({ ...IMPROVE, ...CLOSED }).map(k => [k, J(IMPROVE[k]), J(CLOSED[k])]));
+  tab(F1, '개선과제', '노랑', '다락방', '회고 보고서에서 나온 과제 — 다음 해 같은 사역 기획안으로', ['사역', '과제(JSON)', '닫힘(JSON)'], imRows114());
   tab(F1, '상시사역로그', '노랑', '다락방', '', ['일자', '사역명', '담당국', '참석', '참여자들', '지출'], ROUTLOG.map(x => [x.date, x.what, x.dept, x.people, A(x.who), x.spent]));
   tab(F1, '장소', '노랑', '다락방', '장소 한 곳이 한 줄 — 자료집 › 장소에서 등록 · 고침. 사역 · 기획안의 장소 칸은 여기서 고르고, 현장 한 장의 비상 칸도 여기서 채워짐. 지우면 상태 칸에 삭제', ['장소명', '주소', '병원 · 약국', '구급함', '대피', '사무실', '구분', '가는 길', '몇 명', '시설', '얼마', '언제 예약', '꼭 지킬 것', '배운 것', '다시 쓸지', '담당국', '썼던 때', '고친 사람', '고친 날', '상태'], PLACES.map(x => [x.name, N(x.address), N(x.hospital), N(x.aid), N(x.escape), N(x.office), N(x.kind), N(x.where), N(x.cap), N(x.fac), N(x.cost), N(x.book), N(x.rule), N(x.lesson), N(x.again), N(x.dept), N(x.used), N(x.by), N(x.at), '']));
   const org = []; USERS.forEach(u => { const kind = ['지도목사', '부장'].includes(u.role) ? '교역 · 부장' : u.role === '셀리더' ? '셀리더' : u.role === '팀장' ? '팀장' : '임원'; org.push([yr, kind, u.role === '셀리더' ? u.cell + ' 셀리더' : u.role === '팀장' ? u.team : u.role, u.role === '셀리더' ? u.cell : u.role === '팀장' ? u.team : u.role, u.name === '(미정)' ? '' : u.name, UID[u.name] || '', deptOfRole(u.role) || '', `${yr}-01-01`, '', '현']); });
@@ -8306,7 +8308,7 @@ function sheetTabs(lite){
   const AL = { weekDue: '이번 주 마감 n개부터 노랑', absentWeeks: '결석 n주부터', surveyDays: '조사 마감 D-n', budgetPct: '예산 n%부터', visitDays: '심방 재배정 n일', receiptDays: '영수증 기한 n일(0 = 끔)' }, CR = { need: '돌봄 필요 — 출석 n% 미만', stable: '안정 — 출석 n% 이상', dev: '핵심 — 말씀 · 큐티 주 n일', warn3: '연속 결석 n주 — 관심', long6: '장결 위험 — n주', serveMonths: '사역 가능 — 등록 뒤 n개월', archiveMonths: '보관 제안 — 장결 뒤 n개월', purgeMonths: '파기 가능 — 보관 뒤 n개월' };
   tab(F1, '설정', '회색', '관리자', '연도 무관 — 키 · 값. 파일 ID는 연결할 때 채움', ['키', '값', '설명'], Object.entries(ALERT_RULE).map(([k, v]) => ['경고등.' + k, v, AL[k] || '']).concat(Object.entries(CARE_RULE).map(([k, v]) => ['돌봄.' + k, v, CR[k] || '']), [['재원', FUNDS.join(' · '), '재원 이름 셋'], ['소항목', SUBS.join(' · '), '지출 소항목 16'], ['파일.사역마스터', '', '구글 시트 ID'], ['파일.목양마스터', '', ''], ['파일.회계장부', '', ''], ['파일.주일예배운영', '', ''], ['파일.심방일지', '', ''], ['양식 버전', '다락방 v98', ''], ['삭제 예정일', `${yr}-12-31`, '참가 신청 연락처']]));
   tab(F1, '로그', '회색', '다락방', '쓰기마다 한 줄 — 값은 적지 않음', ['시각', '이름', '직책', '화면', '항목', '대상'], LOG.map(l => [l.t, l.who, l.role, l.screen, l.item, l.target]));
-  tab(F1, '연간요약', '노랑', '다락방(1월)', '지난 해를 볼 때 이것만 읽음 — 1월에 전년 숫자를 확정해 한 줄', ['연도', '목양(JSON)', '사역(JSON)', '재정(JSON)', '확정일'], []);
+  tab(F1, '연간요약', '노랑', '다락방(1월)', '지난 해를 볼 때 이것만 읽음 — 1월에 전년 숫자를 확정해 한 줄', ['연도', '목양(JSON)', '사역(JSON)', '재정(JSON)', '확정일', ...(srvAtLeast(SRV26C) ? ['서술(JSON)'] : [])], srvAtLeast(SRV26C) ? anRows114() : []);
 
   // ================= 목양 마스터
   tab(F2, '교적부', '노랑', '다락방', '한 사람 한 줄. 셀이 비면 미배정(셀 편성판 아래 칸). 줄을 지우지 않고 보관함으로', ['ID', '이름', '생일', '성별|남,여', '연락처', '셀', '셀 역할', '상태|출석,진급,장결,복귀,전출,졸업', '상태 변경일', '등록일', '입력일', '인도자', '주소', '학교/직장', '비고', '전년 셀', '전년 분류|핵심,안정,관심,돌봄 필요,장결 위험', '리더 후보'],
@@ -8333,8 +8335,8 @@ function sheetTabs(lite){
   tab(F3, '예산등록', '노랑', '다락방', '예산 등록의 세부 줄 — 해마다 한 벌. 확정하면 사역별 예산이 항목별 합계를 씀', ['No', '항목', '소항목', '내용', '금액', '재원', '상태|작성 중,확정,삭제', '고친 사람', '고친 날'], bdRows111());
   tab(F3, '재원변경', '노랑', '다락방', '정산(수련회비 ↔ 회비) · 재지정(교회지원금 → 회비). 이체는 없음', ['No', '일자', '종류|정산,재지정', '사역', '어디서', '어디로', '금액', '사유', '입력자'], FUNDMOVES.map(x => [x.id, x.date, x.kind, N(x.ev), x.from, x.to, x.amt, x.why, x.by]));
   tab(F3, '예산조정', '노랑', '다락방', '당초 예산과 장부는 고치지 않고 조정 한 줄', ['일자', '어디서', '어디로', '금액', '사유', '승인', '입력자'], BUDGET_ADJ.map(x => [x.date, x.from, x.to, x.amt, x.why, x.ok, x.by]));
-  tab(F3, '월마감', '노랑', '다락방', '전월 정리 — 통장 잔액 = 교회지원금 + 수련회비 + 회비 잔액', ['월', '마감일', '잔액 교회지원금', '잔액 수련회비', '잔액 회비', '잔액(통장)', '차액', '사유', '교회 제출 PDF', '영수증 PDF', '마감자', '반기 제출일'], []);
-  tab(F3, '결산', '노랑', '다락방(1월)', '연 한 줄', ['연도', '수입(JSON)', '지출(JSON)', '사역별 집행(JSON)', '재원별 잔액(JSON)', '정산 · 수련회 수지(JSON)', '이월', '확정일'], []);
+  tab(F3, '월마감', '노랑', '다락방', '전월 정리 — 통장 잔액 = 교회지원금 + 수련회비 + 회비 잔액', ['월', '마감일', '잔액 교회지원금', '잔액 수련회비', '잔액 회비', '잔액(통장)', '차액', '사유', '교회 제출 PDF', '영수증 PDF', '마감자', '반기 제출일', ...(srvAtLeast(SRV26C) ? ['체크(JSON)'] : [])], srvAtLeast(SRV26C) ? mcRows114() : []);
+  tab(F3, '결산', '노랑', '다락방(1월)', '연 한 줄', YFCOLS114, yfRows114());
   tab(F3, '회비현황', '노랑', '다락방', '셀마다 대상 · 납부 인원', ['셀', '대상', '납부'], Object.keys(CELLS).map(c => [c, N((DUES[c] || [])[0]), N((DUES[c] || [])[1])]));
 
   // ================= 주일 예배 운영
@@ -8395,7 +8397,7 @@ const CODEC = {
   문서: {key:['No'], dec:R => cvList(DOCREC, R, d => d.id, r => r['No'], (r, d) => { if (r['상태'] === '삭제') return null; d.id = CV.n(r['No']); d.kind = CV.s(r['종류']).split(' · ')[0]; d.title = CV.s(r['제목']); cvSet(d, 'ev', CV.o(r['사역'])); d.date = CV.s(r['날짜']); d.by = CV.s(r['작성(직책)']); cvSet(d, 'status', CV.o(r['상태'])); d.f = CV.jo(r['칸 내용(JSON)']) || {}; cvSet(d, 'pdf', CV.url(r['PDF 경로'])); cvSet(d, 'edits', CV.ja(r['고친 기록(JSON)'])); return d; })},
   조사: {key:['No'], dec:R => cvList(SURVEYS, R, s => s.id, r => r['No'], (r, s) => { const k = CV.s(r['종류']).split(' · '); s.id = CV.n(r['No']); s.title = CV.s(r['제목']); s.kind = k[0]; cvSet(s, 'car', k[1] === '차량' || undefined); s.audience = CV.s(r['대상']); cvSet(s, 'ev', CV.o(r['사역 No'])); s.deadline = CV.s(r['마감']); s.by = CV.s(r['만든 직책']); s.options = CV.a(r['선택지']); s.resp = CV.jo(r['응답(JSON)']) || {}; Object.keys(s.resp).forEach(k => { if (!s.resp[k] || typeof s.resp[k] !== 'object' || Array.isArray(s.resp[k])) delete s.resp[k]; }); cvSet(s, 'page', CV.url(r['신청 페이지'])); s.closed = CV.y(r['닫힘']); return s; })},
   승인: {key:['No'], dec:R => { const keep = EX.approvals.filter(a => a.who), L = EX.approvals.filter(a => !a.who); cvList(L, R.filter(r => !/^상태 변경 #/.test(CV.s(r['이름']))), a => a.id, r => r['No'], (r, a) => { a.id = CV.n(r['No']); a.name = CV.s(r['이름']); a.type = CV.s(r['종류']); a.owner = CV.s(r['올린 직책']); a.date = CV.s(r['날짜']); a.status = CV.s(r['상태']); cvSet(a, 'doc', CV.n(r['문서 No'])); cvSet(a, 'why', CV.o(r['사유'])); cvSet(a, 'ok', CV.o(r['확인자'])); return a; }); EX.approvals.splice(0, EX.approvals.length, ...L, ...keep); }},
-  인수인계: {key:['연도', '자리'], dec:R => { Object.keys(HANDED).forEach(k => delete HANDED[k]); R.forEach(r => { const d = CV.jo(r['체크한 줄(JSON)']) || {}; HANDED[CV.s(r['자리'])] = cvSet(cvSet({done:d}, 'at', CV.o(r['마친 날'])), 'by', CV.o(r['마친 사람'])); }); }},
+  인수인계: {key:['연도', '자리'], dec:R => { Object.keys(HANDED).forEach(k => delete HANDED[k]); R.forEach(r => { const d = CV.jo(r['체크한 줄(JSON)']) || {}; HANDED[CV.s(r['자리'])] = cvSet(cvSet({done:d, from:CV.s(r['넘긴 사람']), to:CV.s(r['받은 사람']), memo:CV.s(r['전하는 말']), at:''}, 'at', CV.o(r['마친 날']) || ''), 'by', CV.o(r['마친 사람'])); }); }},
   알림: {key:['No'], dec:R => cvList(NOTES, R, n => n.id, r => r['No'], (r, n) => { n.id = CV.n(r['No']); n.date = CV.s(r['보낸 시각']); n.from = CV.s(r['보낸 직책']); n.to = CV.a(r['받는 직책들']); n.text = CV.s(r['내용']); cvSet(n, 'ev', CV.o(r['관련 사역'])); cvSet(n, 'read', CV.jo(r['읽음(JSON)'])); cvSet(n, 'reply', CV.jo(r['한 줄 답(JSON)'])); return n; })},
   공지: {key:['No'], dec:R => cvList(NOTICES, R, n => n.id, r => r['No'], (r, n) => { n.id = CV.n(r['No']); n.date = CV.s(r['날짜']); n.by = CV.s(r['보낸 직책']); n.kind = CV.s(r['종류']); n.text = CV.s(r['내용']); n.important = CV.y(r['중요']); return n; })},
   QA: {key:['No'], dec:R => cvList(QUESTIONS, R, q => q.id, r => r['No'], (r, q) => { q.id = CV.n(r['No']); q.kind = CV.s(r['종류']); q.text = CV.s(r['질문']); cvSet(q, 'answer', CV.o(r['답'])); q.by = CV.s(r['질문자']); q.role = CV.s(r['직책']); cvSet(q, 'answeredBy', CV.o(r['답한 직책'])); q.date = CV.s(r['질문일']); cvSet(q, 'date2', CV.o(r['답일'])); q.toFaq = CV.y(r['FAQ 올림']); return q; })},
@@ -8924,8 +8926,8 @@ function placeLearn(){ const n = PL_PEND; PL_PEND = null; if (!n || n === '—' 
 const UNSAVED = {budgetDraft:'예산안(세부 줄 · 확정)', monthClose:'전월 정리(체크 · 마감)', manualEdit:'국 매뉴얼', manualNew:'국 매뉴얼', visitForm:'심방 기록', annualReport:'연간 보고의 서술 글'};
 function unsavedNote(what){ if (!srvLive()) return; const c = document.querySelector('#modal .cont'); if (!c || c.querySelector('.unsv')) return;
   c.insertAdjacentHTML('afterbegin', `<p class="unsv" role="note">⚠︎ <b>${what}</b> — 아직 시트에 저장되지 않습니다. 창을 닫았다가 새로 고치면 사라지니, 지금은 PDF로 남겨 두세요(연결 준비 중).</p>`); }
-Object.keys(UNSAVED).forEach(k => { const f = window[k]; if (typeof f !== 'function') return; window[k] = function(){ const r = f.apply(this, arguments); try { if (!(k === 'budgetDraft' && typeof bdLive111 === 'function' && bdLive111())) unsavedNote(UNSAVED[k]); } catch (e) {} return r; }; });
-{ const _docOk106 = docOk; docOk = function(){ const r = _docOk106.apply(this, arguments); if (srvLive()) toast('도장은 찍혔지만 아직 시트에 저장되지 않습니다 — 새로 고치면 지워집니다(연결 준비 중)'); return r; }; }
+Object.keys(UNSAVED).forEach(k => { const f = window[k]; if (typeof f !== 'function') return; window[k] = function(){ const r = f.apply(this, arguments); try { if (!(k === 'budgetDraft' && typeof bdLive111 === 'function' && bdLive111()) && !(typeof saved114 === 'function' && saved114(k))) unsavedNote(UNSAVED[k]); } catch (e) {} return r; }; });
+{ const _docOk106 = docOk; docOk = function(){ const r = _docOk106.apply(this, arguments); if (srvLive() && !live114('결재')) toast('도장은 찍혔지만 아직 시트에 저장되지 않습니다 — 새로 고치면 지워집니다(연결 준비 중)'); return r; }; }
 { const _modal106 = modal; modal = function(){ const r = _modal106.apply(this, arguments); const m = document.getElementById('modal'); if (!m) return r;
     ['ne_p', 'ee_p', 'pl_l'].forEach(id => { const el = m.querySelector('#' + id); if (!el) return; placeDL(); el.setAttribute('list', 'dl_place'); el.setAttribute('autocomplete', 'off'); if (!el.placeholder) el.placeholder = '목록에서 고르거나 새로 적기';
       if (id === 'ne_p' && el.value === '본당') { const c = placeFind('세인교회'); el.value = c ? c.name : ''; } el.addEventListener('focus', () => { if (el.value === '—') el.select(); }); });
@@ -9347,6 +9349,127 @@ CHANGELOG.unshift(['2026-11-26', '', '장소 고르기 · 기획안 예산 불�
   '자료집 › 누구에게: 등록 · 고치기 · 지우기와 엑셀로 받기 · 올리기(서버 2026-11-26b부터 저장)',
   '교적부 엑셀 양식 · 붙여넣기에 주소 · 학교/직장 칸',
   'PDF 저장: 미리보기 그대로 PDF 파일로 내려받습니다']]);
+
+/* ==================== v114 — 서버 잇기 2차(2026-11-26 19:42 회장) ====================
+   화면에서는 되는데 시트에 남지 않던 것: 결재 도장 · 전월 정리 · 인수인계의 넘긴/받은 사람과 전하는 말 · 개선 과제 반영 표시 · 연말 결산 확정 · 보고서의 한 줄 · 연간 보고 서술 글.
+   서버 2026-11-26c부터 저장됨(그 전 서버에서는 지금처럼 화면에만 — 새 탭 · 새 칸을 보내지 않음). */
+const SRV26C = '2026-11-26c';
+const on114 = () => typeof SRV !== 'undefined' && SRV.on;
+const live114 = t => srvLive() && srvAtLeast(SRV26C) && SYNC.includes(t);   // 그 탭이 지금 시트에 저장되는가
+const sync114 = t => { if (srvAtLeast(SRV26C) && !SYNC.includes(t)) SYNC.push(t); };
+const base114 = t => (on114() && SRV.base && SRV.base[t]) || null;
+const keep114 = (t, cols) => { const B = base114(t); return B ? [...B.rows.values()].map(x => cols.map(c => x.r[c] === undefined ? '' : x.r[c])) : []; };   // 내가 못 고치는 탭 — 보낸 그대로 둠(보낼 것 없음)
+const saved114 = k => k === 'monthClose' ? live114('월마감') : k === 'annualReport' ? live114('연간요약') : false;
+
+/* ---------- 해마다 따로 — 도장 · 한 줄 · 서술 글 · 개선 과제 · 전월 정리 · 결산 확정 (전에는 예시 해의 것이 올해 판에 비쳐 보였음) ---------- */
+const MC114 = {};      // 월(1 ~ 12) → {chk:['c1' …], bal:'통장 잔액', at:'마감일', by:'마감자', f:[교회지원금, 수련회비, 회비 잔액], why}
+let YFIX114 = null;    // 연말 결산 확정 — {y, inc, sp, ev, bal, mv, carry, at}
+{ const _pk114 = yearPackAll; yearPackAll = function(){ const P = _pk114.apply(this, arguments); P._v114 = JSON.parse(JSON.stringify({oks:OKS, rep:REPNOTE, ann:ANNUAL_TEXT, les:NEXT_LESSONS, mc:MC114, close:[...CLOSE], bal:CLOSE_BAL, yfix:YFIX114})); return P; }; }
+{ const _ld114 = yearLoadAll; yearLoadAll = function(P){ const r = _ld114.apply(this, arguments), X = (P && P._v114) || {}, put = (o, v) => { Object.keys(o).forEach(k => delete o[k]); Object.assign(o, v || {}); };
+    put(OKS, X.oks); put(REPNOTE, X.rep); put(ANNUAL_TEXT, Object.assign({summary:'', thanks:'', next:''}, X.ann)); put(NEXT_LESSONS, X.les); put(MC114, X.mc);
+    CLOSE.clear(); (X.close || []).forEach(k => CLOSE.add(k)); CLOSE_BAL = X.bal || ''; YFIX114 = X.yfix || null; return r; }; }
+
+/* ---------- ① 결재 도장 ---------- */
+const OKCOLS114 = ['열쇠', '직책', '이름', '날짜'];
+const okFor114 = (key, by) => { const o = OKS[key]; if (!o) return null; if (o.role === by) return o; return (o.also || []).find(x => x.role === by) || null; };   // 그 칸의 결재자가 찍은 것만 도장
+function okRows114(){ const L = []; Object.entries(OKS).forEach(([k, o]) => { if (!o || !o.role) return; [o].concat(o.also || []).forEach(x => L.push([k, x.role, x.name || '', x.at || ''])); }); return L; }
+CODEC.결재 = {key:['열쇠', '직책'], skip:['이름', '날짜'], dec:R => { sync114('결재');
+  const mine = Object.entries(OKS).filter(([k, o]) => o && o.loc); Object.keys(OKS).forEach(k => delete OKS[k]);
+  const put = (k, o) => { if (OKS[k]) (OKS[k].also = OKS[k].also || []).push(o); else OKS[k] = o; };
+  R.forEach(r => { const k = CV.s(r['열쇠']), o = {role:CV.s(r['직책']), name:CV.s(r['이름']), at:CV.s(r['날짜'])}; if (k && o.role) put(k, o); });
+  mine.forEach(([k, o]) => { if (!okFor114(k, o.role)) put(k, {role:o.role, name:o.name, at:o.at, loc:1}); }); }};   // 방금 찍고 아직 보내지 못한 도장은 남김
+SNOUP.push('결재');
+{ const _ok114 = docOk; docOk = function(key, by){ const prev = OKS[key], had = okFor114(key, by), r = _ok114.apply(this, arguments), o = OKS[key];
+    if (o && o !== prev && o.role === by) { if (prev && prev.role !== by) o.also = [{role:prev.role, name:prev.name, at:prev.at}].concat(prev.also || []).filter(x => x.role !== by); if (!had) o.loc = 1; srvKick111(); }
+    return r; }; }
+
+/* ---------- ⑥ 보고서에 손으로 적는 한 줄 — 월 사역 보고(mm) · 반기 보고(hf)는 회장, 월 목양 보고(ms)는 목양국장, 안건지(ag)는 회장 · 총무 ---------- */
+const NTCOLS114 = ['열쇠', '글', '고친 사람', '고친 날'];
+const ntCan114 = k => /^(mm|hf):/.test(k) ? S.role === '회장' : /^ms:/.test(k) ? S.role === '목양국장' : /^ag:/.test(k) ? ['회장', '총무'].includes(S.role) : false;
+function ntRows114(){ const M = new Map(keep114('보고한줄', NTCOLS114).map(r => [String(r[0]), r]));
+  Object.entries(REPNOTE).forEach(([k, v]) => { if (on114() && !ntCan114(k)) return; const b = M.get(k); if (!b && !v) return; M.set(k, [k, v || '', b ? b[2] : '', b ? b[3] : '']); });
+  return [...M.values()]; }
+CODEC.보고한줄 = {key:['열쇠'], skip:['고친 사람', '고친 날'], dec:R => { if (!srvAtLeast(SRV26C)) return; sync114('보고한줄'); Object.keys(REPNOTE).forEach(k => delete REPNOTE[k]); R.forEach(r => { const k = CV.s(r['열쇠']), v = CV.s(r['글']); if (k && v) REPNOTE[k] = v; }); }};
+
+/* ---------- ② 전월 정리 ---------- */
+const MCCOLS114 = ['월', '마감일', '잔액 교회지원금', '잔액 수련회비', '잔액 회비', '잔액(통장)', '차액', '사유', '교회 제출 PDF', '영수증 PDF', '마감자', '반기 제출일', '체크(JSON)'];
+const MCK114 = ['c1', 'c2', 'c3', 'c4', 'c5'];
+const mcCan114 = () => !S.arch && ['회계', '회장'].includes(S.role);
+const mcYm114 = m => `${YNOW()}-${String(m).padStart(2, '0')}`;
+function mcSnap114(){ if (!mcCan114()) return; const m = prevMonth(), chk = MCK114.filter(k => CLOSE.has(k)), bal = String(CLOSE_BAL === undefined || CLOSE_BAL === null ? '' : CLOSE_BAL).replace(/[^\d-]/g, '');
+  if (!MC114[m] && !chk.length && bal === '' && !CLOSED.has(m)) return;
+  const R = MC114[m] = MC114[m] || {chk:[], bal:'', at:'', by:'', f:[0, 0, 0]}; R.chk = chk; R.bal = bal;
+  if (!R.at) { const F = fin(); R.f = [F.churchBal, F.feeBal, F.duesBal]; if (CLOSED.has(m)) { R.at = TODAYISO; R.by = S.name || S.role; log('재정', '전월 정리 마감', MONTHS[m - 1]); } } }
+function mcRows114(){ if (on114() && !mcCan114()) return keep114('월마감', MCCOLS114);
+  return Object.entries(MC114).filter(([m, R]) => R && (R.at || R.bal !== '' || (R.chk || []).length)).map(([m, R]) => { const f = R.f || [0, 0, 0], sum = f[0] + f[1] + f[2];
+    return [mcYm114(+m), R.at || '', f[0], f[1], f[2], R.bal === '' ? '' : +R.bal, R.bal === '' ? '' : +R.bal - sum, R.why || '', '', '', R.by || '', '', JSON.stringify(R.chk || [])]; }); }
+CODEC.월마감 = {key:['월'], skip:['마감자'], dec:R => { if (!srvAtLeast(SRV26C)) return; sync114('월마감'); Object.keys(MC114).forEach(k => delete MC114[k]); CLOSED.clear(); const Y = String(YNOW());
+  R.forEach(r => { const ym = CV.s(r['월']), m = +ym.slice(5, 7), b = r['잔액(통장)']; if (ym.slice(0, 4) !== Y || !(m >= 1 && m <= 12)) return;
+    MC114[m] = {chk:(CV.ja(r['체크(JSON)']) || []).filter(k => MCK114.includes(k)), bal:b === '' || b === undefined || b === null ? '' : String(CV.n0(b)), at:CV.s(r['마감일']), by:CV.s(r['마감자']), f:[CV.n0(r['잔액 교회지원금']), CV.n0(r['잔액 수련회비']), CV.n0(r['잔액 회비'])], why:CV.s(r['사유'])};
+    if (MC114[m].at) CLOSED.add(m); });
+  const P = MC114[prevMonth()]; CLOSE.clear(); (P ? P.chk : []).forEach(k => CLOSE.add(k)); CLOSE_BAL = P ? P.bal : ''; }};
+{ const _mc114 = monthClose; monthClose = function(){ const r = _mc114.apply(this, arguments);
+    try { mcSnap114(); const R = MC114[prevMonth()], c = document.querySelector('#modal .cont'), b = document.getElementById('cl_b');
+      if (b) b.addEventListener('change', () => { mcSnap114(); srvKick111(); });
+      if (c && R && R.at && !c.querySelector('.mc114')) c.insertAdjacentHTML('beforeend', `<p class="note mc114" style="margin-top:8px">마감 ${esc(R.at)} · ${esc(R.by || '')}${live114('월마감') ? ' — 시트에 저장됩니다' : ''}</p>`);
+      srvKick111(); } catch (e) { console.error('전월 정리', e); }
+    return r; }; }
+
+/* ---------- ⑤ 연말 결산 확정 ---------- */
+const YFCOLS114 = ['연도', '수입(JSON)', '지출(JSON)', '사역별 집행(JSON)', '재원별 잔액(JSON)', '정산 · 수련회 수지(JSON)', '이월', '확정일'];
+const yfCan114 = () => !S.arch && ['회계', '회장'].includes(S.role);
+function yfRows114(){ if (on114() && !yfCan114()) return keep114('결산', YFCOLS114); const X = YFIX114, J = v => JSON.stringify(v === undefined ? null : v);
+  return X ? [[X.y, J(X.inc), J(X.sp), J(X.ev), J(X.bal), J(X.mv), X.carry, X.at]] : []; }
+CODEC.결산 = {key:['연도'], skip:[], dec:R => { if (!srvAtLeast(SRV26C)) return; sync114('결산'); YFIX114 = null; const Y = String(YNOW());
+  R.forEach(r => { if (String(r['연도']) !== Y || !CV.s(r['확정일'])) return; YFIX114 = {y:+Y, inc:CV.jo(r['수입(JSON)']) || {}, sp:CV.jo(r['지출(JSON)']) || {}, ev:CV.jo(r['사역별 집행(JSON)']) || {}, bal:CV.jo(r['재원별 잔액(JSON)']) || {}, mv:CV.ja(r['정산 · 수련회 수지(JSON)']) || [], carry:CV.n0(r['이월']), at:CV.s(r['확정일'])}; }); }};
+function yfix114(go){ if (!yfCan114() || YFIX114) return; if (!CLOSED.has(12)) { toast('12월 전월 정리를 마친 뒤에 확정합니다'); return; }
+  if (!go) { V2.yfAsk114 = true; return annualReport(); }
+  const F = fin(), Y = YNOW(), ev = {}; EVENTS.filter(e => !e.recurring && String(e.date).slice(0, 4) === String(Y)).forEach(e => { const v = spentOf(e.item || e.name); if (v) ev[e.name] = v; });
+  const by = k => Object.fromEntries(FUNDS.map(f => [f, F.by[f][k]]));
+  YFIX114 = {y:Y, inc:by('inn'), sp:by('sp'), ev, bal:by('bal'), mv:FUNDMOVES.filter(v => v.kind === '정산').map(v => ({ev:v.ev, from:v.from, to:v.to, amt:v.amt})), carry:F.bal, at:TODAYISO};
+  V2.yfAsk114 = false; log('재정', '연말 결산 확정', String(Y)); toast(`${Y}년 결산을 확정했습니다 — 다음 해로 넘기는 돈 ${won(F.bal)}원`); annualReport(); srvKick111(); }
+{ const _ar114 = annualReport; annualReport = function(){ const r = _ar114.apply(this, arguments);
+    try { const bt = document.querySelector('#modal .cont > .px-bt'), X = YFIX114; if (bt && !document.querySelector('#modal .yf114')) { let h = '';
+        if (X) h = `<div class="callout yf114 noprint" style="margin:12px 0 0"><b>${esc(String(X.y))}년 결산 확정</b> · ${esc(X.at)} — 다음 해로 넘기는 돈 <b>${won(X.carry)}원</b>. 확정한 숫자는 결산 탭에 한 줄로 남았습니다.</div>`;
+        else if (yfCan114()) h = !CLOSED.has(12) ? `<p class="note yf114 noprint" style="margin:12px 0 0">12월 전월 정리를 마치면 여기서 결산을 확정합니다.</p>`
+          : V2.yfAsk114 ? `<div class="callout yf114 noprint" style="margin:12px 0 0">지금 숫자를 ${YNOW()}년 결산으로 남깁니다. 확정한 뒤에는 다락방에서 고칠 수 없습니다.<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn p" id="yf114go" onclick="yfix114(1)">확정</button><button class="btn" onclick="V2.yfAsk114=false;annualReport()">취소</button></div></div>`
+          : `<div class="yf114 noprint" style="margin:12px 0 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn" id="yf114" onclick="yfix114()">결산 확정</button><span class="note">12월 마감 뒤의 숫자를 결산 탭에 한 줄로 남깁니다</span></div>`;
+        if (h) bt.insertAdjacentHTML('beforebegin', h); } } catch (e) { console.error('결산 확정', e); }
+    return r; }; }
+
+/* ---------- ⑦ 연간 보고의 서술 글(회장) ---------- */
+const ANCOLS114 = ['연도', '목양(JSON)', '사역(JSON)', '재정(JSON)', '확정일', '서술(JSON)'];
+function anRows114(){ const K = keep114('연간요약', ANCOLS114); if (on114() && S.role !== '회장') return K;
+  const T = ANNUAL_TEXT, Y = YNOW(), B = K.find(r => String(r[0]) === String(Y)), any = T.summary || T.thanks || T.next; if (!any && !B) return K;
+  return K.filter(r => r !== B).concat([[Y, B ? B[1] : '', B ? B[2] : '', B ? B[3] : '', B ? B[4] : '', any ? JSON.stringify({summary:T.summary || '', thanks:T.thanks || '', next:T.next || ''}) : '']]); }
+CODEC.연간요약 = {key:['연도'], skip:[], dec:R => { if (!srvAtLeast(SRV26C)) return; sync114('연간요약'); const Y = String(YNOW()); ANNUAL_TEXT.summary = ANNUAL_TEXT.thanks = ANNUAL_TEXT.next = '';
+  R.forEach(r => { if (String(r['연도']) !== Y) return; const T = CV.jo(r['서술(JSON)']) || {}; ['summary', 'thanks', 'next'].forEach(k => { ANNUAL_TEXT[k] = typeof T[k] === 'string' ? T[k] : ''; }); }); }};
+{ const _as114 = annualSave; annualSave = function(){ const r = _as114.apply(this, arguments); srvKick111(); return r; }; }
+
+/* ---------- ④ 개선 과제 — 회고에서 나온 과제(다음 해 기획안으로)와 올해 기획안에 반영한 표시 ---------- */
+const IMCOLS114 = ['사역', '과제(JSON)', '닫힘(JSON)'];
+function imRows114(){ const K = keep114('개선과제', IMCOLS114); if (on114() && !TOPR106().includes(S.role)) return K;
+  const M = new Map(); Object.entries(NEXT_LESSONS).forEach(([n, L]) => { if (Array.isArray(L) && L.length) M.set(n, [n, JSON.stringify(L), '[]']); });
+  EVENTS.forEach(e => { const L = (e.last && e.last.lessons) || [], on = L.map((_, i) => i).filter(i => IMPROVE.has(impK(e, i))); if (!on.length) return; const r = M.get(e.name) || [e.name, '[]', '[]']; if (r[2] === '[]') r[2] = JSON.stringify(on); M.set(e.name, r); });
+  K.forEach(b => { if (!M.has(String(b[0]))) M.set(String(b[0]), [b[0], '[]', '[]']); });   // 체크를 다 푼 사역 — 빈 줄로 다시 보냄
+  return [...M.values()]; }
+CODEC.개선과제 = {key:['사역'], skip:[], dec:R => { if (!srvAtLeast(SRV26C)) return; sync114('개선과제'); Object.keys(NEXT_LESSONS).forEach(k => delete NEXT_LESSONS[k]); IMPROVE.clear();
+  R.forEach(r => { const n = CV.s(r['사역']), L = (CV.ja(r['과제(JSON)']) || []).filter(x => typeof x === 'string'), on = (CV.ja(r['닫힘(JSON)']) || []).filter(i => Number.isInteger(i) && i >= 0); if (!n) return;
+    if (L.length) NEXT_LESSONS[n] = L; const e = EVENTS.find(x => x.name === n); if (e) on.forEach(i => IMPROVE.add(impK(e, i))); }); }};
+
+/* 받는 차례 · 아직 잇지 않은 탭 목록 */
+['연간요약', '개선과제', '월마감', '결산'].forEach(t => { const i = CVLOCAL.indexOf(t); if (i >= 0) CVLOCAL.splice(i, 1); });
+{ const after = (a, t) => { if (!CVORDER.includes(t)) CVORDER.splice(Math.max(0, CVORDER.indexOf(a)) + 1, 0, t); };
+  after('문서', '결재'); after('결재', '보고한줄'); after('보고한줄', '개선과제'); after('개선과제', '연간요약'); after(CVORDER.includes('예산등록') ? '예산등록' : '예산조정', '월마감'); after('월마감', '결산'); }
+
+CHANGELOG.unshift(['2026-11-26', '', '적은 것이 시트에 남습니다 — 도장 · 전월 정리 · 인수인계 · 결산', [
+  '결재 도장: 목사님 · 부장님이 찍은 도장이 시트에 남습니다(전에는 새로 고치면 사라짐). 한 번 찍은 도장은 고치지 않습니다',
+  '전월 정리: 체크 · 통장 잔액 · 마감이 저장됩니다. 마감한 사람과 날짜는 서버가 적습니다',
+  '인수인계: 넘긴 사람 · 받은 사람 · 전하는 말이 저장됩니다',
+  '연간 결산 창에 "결산 확정" — 12월 마감 뒤의 숫자를 결산 탭에 한 줄로 남깁니다',
+  '월 보고 · 안건지 · 반기 보고에 적는 한 줄, 연간 보고의 서술 글, 기획안의 "작년 과제 반영" 체크가 저장됩니다',
+  '고침: 예시 해의 도장과 손글이 올해 화면에 비쳐 보이던 것 · 작년 과제 체크가 다른 사역에 같이 켜지던 것',
+  '서버 2026-11-26c부터 저장됩니다 — 그 전 서버에서는 지금처럼 화면에만 남습니다']]);
 
 autoBdayNotice();
 render();
