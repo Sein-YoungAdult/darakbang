@@ -3345,7 +3345,7 @@ const shift = (iso, n) => { const d = pd(iso); d.setDate(d.getDate() + n); retur
 const nextDow = dow => shift(TODAYISO, ((dow - TODAY.getDay()) + 7) % 7 || 7);   // 다음 요일 (0 일 ~ 6 토)
 const prevMonth = () => TODAY.getDate() >= 25 ? TODAY.getMonth() + 1 : (TODAY.getMonth() === 0 ? 12 : TODAY.getMonth());   // 정리할 달 (1~12): 월말이면 이번 달, 월초면 지난달
 const CLOSED = new Set(); let CLOSE_BAL = '';
-const respRate = c => Math.round(100 * CELLS[c].filter(m => m.resp).length / CELLS[c].length);
+const respRate = c => Math.round(100 * CELLS[c].filter(m => m.resp && inRoll122(m)).length / (rollN122(CELLS[c]) || 1));   // v122: 특별관리는 빼고
 const pctOf = m => { const r = m.att.filter(v => v !== null); return r.length ? Math.round(100 * r.filter(v => v === 1).length / r.length) : 100; };
 
 
@@ -4005,7 +4005,7 @@ function monthItems(y, m){   // 날짜 → 항목 목록 [{t, cls, go}]
   Object.values(CELLS).flat().filter(x => x.bday && SHOW_BDAY).forEach(x => add(x.bday, '🎂 ' + x.n, 'bday', null));
   return out;
 }
-const ROSTER = Object.values(CELLS).flat().length;   // 재적(출석 상태) — 예시. 운영 단계: 교적부 상태 '출석' + '새가족' 수
+const ROSTER = rollN122(Object.values(CELLS).flat());   // 재적(출석 상태) — 예시. 운영 단계: 교적부 상태 '출석' + '새가족' 수
 const SHOW_BDAY = false;   // 달력에는 생일을 넣지 않음 (사역 많을 때 복잡 — 11-05 회장). 대신 이번 달 띠 · 광고
 /* 생일 — 전 리더 공개, 월/일만 (11-05). 이번 주 생일은 '이번 달' 띠 한 줄, 이번 달 생일자는 월 첫 주일 광고에 자동으로 */
 const mdOf = iso => iso.slice(5);
@@ -4072,7 +4072,7 @@ function sosPulse(x){ const now = Date.now(); if (!SOSP.t || x.b > SOSP.b) SOSP.
 function sceneBand(){ const x = sceneSOS();
   return sceneHTML(x ? `<button type="button" class="sos ${sosPulse(x)}" title="막힘 ${x.b} · 지연 ${x.l}" aria-label="도움이 필요합니다 — 막힘 ${x.b}건, 지연 ${x.l}건. 할 일 보기" onclick="V2.tscope='전체';go('tasks')">SOS</button>` : '', 'band'); }
 V.home = () => S.role && S.role !== '마스터' ? (() => {
-  const att = MONTHLY['10월'].length ? MONTHLY['10월'].reduce((a, x) => a + x[1], 0) / MONTHLY['10월'].length : 0, roster = Object.values(CELLS).flat().length, sermon = WORSHIP.items.find(i => i.k === 'sermon'), duty = WORSHIP.items.find(i => i.k === 'duty');
+  const att = MONTHLY['10월'].length ? MONTHLY['10월'].reduce((a, x) => a + x[1], 0) / MONTHLY['10월'].length : 0, roster = rollN122(Object.values(CELLS).flat()), sermon = WORSHIP.items.find(i => i.k === 'sermon'), duty = WORSHIP.items.find(i => i.k === 'duty');
   const dl = DEADLINES.filter(x => days(x.due) >= 0).slice(0, 3);
   return `${homeMast()}${overloadBar()}${sceneBand()}
   <div class="cards c2" style="gap:10px">
@@ -4309,8 +4309,8 @@ const cbCan = () => S.role === '마스터';
 const cbSeat = m => [...new Set(USERS.filter(u => u.name === m.n && !['지도목사', '부장'].includes(u.role)).map(u => u.role === '팀장' ? u.team : u.role))].join(' · ');   // 임원 · 셀리더 · 팀장 자리가 있으면 그 이름
 const cbChip98 = m => { const a = memAge(m), g = memGrade(m), sx = m.sex === '남' ? 'm' : m.sex === '여' ? 'f' : 'u', st = cbSeat(m), can = cbCan();
   return `<span class="cbc sx-${sx} ${GRADECLS[g] || 'g0'}${V2.cbSel === m.n ? ' sel' : ''}${st ? ' st' : ''}" draggable="${can}" ${can ? `tabindex="0" role="button" aria-pressed="${V2.cbSel === m.n}"` : ''} data-n="${esc(m.n)}" title="${esc(m.n)} · ${m.sex || '성별 모름'} · ${a ? a + '세' : '나이 모름'} · ${g || '분류 없음'}${st ? ' · ' + esc(st) : ''}">${st ? '<em class="cbs" aria-hidden="true">★</em>' : ''}<b>${esc(m.n)}</b><i>${a || '?'}</i></span>`; };
-const cbCount = L => { const a = L.filter(m => m.sex === '남').length, b = L.filter(m => m.sex === '여').length; return [`${L.length}명`, a || b ? `남 ${a} · 여 ${b}` : '']; };
-function cellBoardHtml(){ const cells = Object.keys(CELLS), tot = Object.values(CELLS).flat().length, sort = ['age', 'grade'].includes(V2.cbSort) ? V2.cbSort : 'name', can = cbCan(), pc = cbCount(POOL);
+const cbCount = L => { const a = L.filter(m => m.sex === '남').length, b = L.filter(m => m.sex === '여').length; return [`${rollN122(L)}명${spN122(L)}`, a || b ? `남 ${a} · 여 ${b}` : '']; };
+function cellBoardHtml(){ const cells = Object.keys(CELLS), tot = rollN122(Object.values(CELLS).flat()), sort = ['age', 'grade'].includes(V2.cbSort) ? V2.cbSort : 'name', can = cbCan(), pc = cbCount(POOL);
   return `<div class="cbtop"><span class="tabs" id="cbsort"><button type="button" class="${sort === 'name' ? 'on' : ''}" onclick="V2.cbSort='name';cbDraw()">가나다순</button><button type="button" class="${sort === 'age' ? 'on' : ''}" onclick="V2.cbSort='age';cbDraw()">나이순</button><button type="button" class="${sort === 'grade' ? 'on' : ''}" onclick="V2.cbSort='grade';cbDraw()">분류순</button></span>
     <span class="cbleg" aria-label="색 설명"><span>아래 줄</span><i class="cbsx sx-m"></i>남 <i class="cbsx sx-f"></i>여<span>분류</span>${cbLegend()}<span><em class="cbs">★</em> 임리더</span></span>
     <span class="note" id="cbsum" style="margin:0 0 0 auto">셀 ${cells.length} · 배정 ${tot}명 · 미배정 ${POOL.length}명</span></div>
@@ -4812,7 +4812,7 @@ function attCard(){
   const all = [...MONTHLY['9월'].map(x => [...x, '9월']), ...MONTHLY['10월'].map(x => [...x, '10월'])], vals = all.map(x => x[1]), lo = Math.min(...vals) - 6, hi = Math.max(...vals) + 2;
   const H = 96, h = v => Math.round(H * (v - lo) / (hi - lo));
   return `<div class="card" style="grid-column:1/-1"><div style="display:grid;gap:12px">
-    <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><span class="note">청년부 예배 출석</span><b style="font-size:30px;letter-spacing:-.02em;line-height:1">${a10}</b><span class="note">명 · 10월 평균</span><span class="pill ${diff >= 0 ? 'ok' : 'bad'}">${diff >= 0 ? '▲' : '▼'} ${Math.abs(diff)}명 vs 9월 ${a9}</span><span class="note" style="margin-left:auto">최고 ${Math.max(...vals)} · 최저 ${Math.min(...vals)} · 재적 ${Object.values(CELLS).flat().length * 2}</span></div>
+    <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><span class="note">청년부 예배 출석</span><b style="font-size:30px;letter-spacing:-.02em;line-height:1">${a10}</b><span class="note">명 · 10월 평균</span><span class="pill ${diff >= 0 ? 'ok' : 'bad'}">${diff >= 0 ? '▲' : '▼'} ${Math.abs(diff)}명 vs 9월 ${a9}</span><span class="note" style="margin-left:auto">최고 ${Math.max(...vals)} · 최저 ${Math.min(...vals)} · 재적 ${rollN122(Object.values(CELLS).flat()) * 2}</span></div>
     <div><div style="display:grid;grid-template-columns:repeat(${all.length},1fr);gap:6px;align-items:end;height:${H + 22}px">${all.map(([d, v, m], i) => `<div style="display:grid;align-content:end;justify-items:center;gap:3px;height:100%"><small style="font-size:11.5px;font-weight:700;color:${m === '10월' ? 'var(--navy)' : 'var(--muted)'}">${v}</small><div title="${d} ${v}명" style="width:70%;max-width:34px;height:${h(v)}px;border-radius:4px 4px 0 0;background:${m === '10월' ? 'var(--navy)' : 'var(--line)'}"></div></div>`).join('')}</div>
       <div style="display:grid;grid-template-columns:repeat(${all.length},1fr);gap:6px;text-align:center;margin-top:4px">${all.map(([d]) => `<small class="note" style="font-size:11px">${d}</small>`).join('')}</div>
       <div style="display:flex;gap:14px;margin-top:6px;font-size:11.5px;white-space:nowrap;flex-wrap:wrap" class="note"><span><i style="display:inline-block;width:9px;height:9px;background:var(--line);border-radius:2px;margin-right:4px"></i>9월</span><span><i style="display:inline-block;width:9px;height:9px;background:var(--navy);border-radius:2px;margin-right:4px"></i>10월</span><span style="margin-left:auto">세로축 ${lo}~${hi}명 — 차이가 보이게 잘라 그림</span></div></div></div></div>`;
@@ -4900,13 +4900,13 @@ V.leader = () => {
     const ms = CELLS[cell], L = WEEKS.length - 1;
     p += `<div class="card link" onclick="go('cell')"><div class="sechead"><h2 style="font-size:15px">${cnH(cell)} · ${WEEKS.length ? '지난 주일 ' + WEEKS[L] : '주간 입력은 ' + NEXTW() + ' 주일부터'}</h2><span class="more">우리 셀 ↗</span></div>
       <div class="cards c2" style="gap:8px">
-        ${statCard('◍', `${ms.filter(m => m.att[L] === 1).length} / ${ms.length}`, '출석')}
-        ${statCard('✎', `${ms.filter(m => m.resp).length} / ${ms.length}`, '주간 응답')}
+        ${statCard('◍', `${ms.filter(m => m.att[L] === 1).length} / ${rollN122(ms)}`, '출석')}
+        ${statCard('✎', `${ms.filter(m => m.resp).length} / ${rollN122(ms)}`, '주간 응답')}
       </div>
       <p class="note" style="margin:10px 0 0">생일 ${ms.filter(m => m.bday && days(m.bday) >= 0 && days(m.bday) <= 14).map(m => m.n).join(', ') || '—'} · 새가족 ${ms.filter(m => m.newc).map(m => `${m.n}(${m.newc}주차)`).join(', ') || '—'}</p></div>`;
   } else if (tier() === 0) {
     p += `<div class="card"><div class="sechead"><h2 style="font-size:15px">셀별 이번 주</h2><a class="more" href="#cell">우리 셀 ↗</a></div>${Object.entries(CELLS).map(([c, ms]) => { const L = WEEKS.length - 1; const a3 = ms.filter(m => m.att.slice(-3).every(v => v === 0)).length;
-      return `<div style="display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13px"><b style="min-width:84px">${cn(c)}</b><span>출석 ${ms.filter(m => m.att[L] === 1).length}/${ms.length}</span><span class="note">응답 ${ms.filter(m => m.resp).length}/${ms.length}</span>${a3 ? `<span class="pill bad">3주 결석 ${a3}</span>` : ''}</div>`; }).join('')}</div>`;
+      return `<div style="display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13px"><b style="min-width:84px">${cn(c)}</b><span>출석 ${ms.filter(m => m.att[L] === 1).length}/${rollN122(ms)}</span><span class="note">응답 ${ms.filter(m => m.resp).length}/${rollN122(ms)}</span>${a3 ? `<span class="pill bad">3주 결석 ${a3}</span>` : ''}</div>`; }).join('')}</div>`;
   }
   if (S.role === '팀장' && myKey() !== '한가족팀장') p += worshipCard(true);   // 예배 정보(새가족 파송 등)는 한가족팀장 일이 아님
   p += `<div class="card"><div class="sechead"><h2 style="font-size:15px">다가오는 청년부 일정</h2><a class="more" href="#schedule">일정 ↗</a></div>${(ck27On() ? EVENTS.filter(e => days(e.end || e.date) >= 0).sort((a, b) => a.date.localeCompare(b.date)) : EVENTS).slice(0, 4).map(e => `<div style="display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:13px"><span class="note" style="width:84px;flex:none">${md(e.date)}</span><span>${e.name}</span><span class="note" style="margin-left:auto">${evDday(e)}</span></div>`).join('')}</div>`;
@@ -4919,10 +4919,10 @@ V.leader = () => {
 const YEARLY = {2025:{출석:41, 재적:62, 새가족등록:9, 파송:7, 정착률:'5/7', 장결전환:2, 복귀:1, 사역:6, 상시:22, 연인원:480, 교회지원금:'8,800,000 / 8,100,000', 회비수입:19800000, 회비지출:18900000, 잔액:3000000, 납부율:'88%', 리더:25},
   2027:{출석:'50 (목표)', 재적:'70 (목표)', 새가족등록:'12 (목표)', 파송:'-', 정착률:'-', 장결전환:'-', 복귀:'-', 사역:'7 (사역DB 잠정 41건 중 전체 7)', 상시:'24', 연인원:'-', 교회지원금:'9,800,000 신청 예정 / -', 회비수입:'24,000,000 (예산)', 회비지출:'23,500,000 (예산)', 잔액:'-', 납부율:'-', 리더:'27 (셀 편성 11월 셋째 주)'}};
 function yearlyNow(){ const F = fin(), att = mAvgAll(), dues = Object.values(DUES).reduce((a, [n, p]) => [a[0] + n, a[1] + p], [0, 0]);
-  return {출석:att, 재적:Object.values(CELLS).flat().length * 2, 새가족등록:NEWFAM.length + 7, 파송:NEWFAM.filter(f => f.stage === '정착 관찰').length + 7, 정착률:'6/9 (12주 뒤 60% 기준)', 장결전환:gbCount120('장결자') + gbCount120('재적 제외 대상'), 복귀:back120(), 사역:EVENTS.filter(e => !e.recurring).length + 1, 상시:ROUTLOG.length + 21, 연인원:'약 520', 교회지원금:`${won(F.churchIn)} / ${won(F.churchSpent)}`, 회비수입:F.duesIn + F.feeIn, 회비지출:F.duesSpent + F.feeSpent, 잔액:F.bal, 납부율:`${Math.round(100 * dues[1] / dues[0])}%`, 리더:27}; }
+  return {출석:att, 재적:rollN122(Object.values(CELLS).flat()) * 2, 새가족등록:NEWFAM.length + 7, 파송:NEWFAM.filter(f => f.stage === '정착 관찰').length + 7, 정착률:'6/9 (12주 뒤 60% 기준)', 장결전환:gbCount120('장결자') + gbCount120('재적 제외 대상'), 복귀:back120(), 사역:EVENTS.filter(e => !e.recurring).length + 1, 상시:ROUTLOG.length + 21, 연인원:'약 520', 교회지원금:`${won(F.churchIn)} / ${won(F.churchSpent)}`, 회비수입:F.duesIn + F.feeIn, 회비지출:F.duesSpent + F.feeSpent, 잔액:F.bal, 납부율:`${Math.round(100 * dues[1] / dues[0])}%`, 리더:27}; }
 V.yearly = (inner) => {
   const F = fin(), att = mAvgAll(), dues = Object.values(DUES).reduce((a, [n, p]) => [a[0] + n, a[1] + p], [0, 0]);
-  const now = {출석:att, 재적:Object.values(CELLS).flat().length * 2, 새가족등록:NEWFAM.length + 7, 파송:NEWFAM.filter(f => f.stage === '정착 관찰').length + 7, 정착률:'6/9 (12주 뒤 60% 기준)', 장결전환:gbCount120('장결자') + gbCount120('재적 제외 대상'), 복귀:back120(), 사역:EVENTS.filter(e => !e.recurring).length + 1, 상시:ROUTLOG.length + 21, 연인원:'약 520', 교회지원금:`${won(F.churchIn)} / ${won(F.churchSpent)}`, 회비수입:F.duesIn + F.feeIn, 회비지출:F.duesSpent + F.feeSpent, 잔액:F.bal, 납부율:`${Math.round(100 * dues[1] / dues[0])}%`, 리더:27};
+  const now = {출석:att, 재적:rollN122(Object.values(CELLS).flat()) * 2, 새가족등록:NEWFAM.length + 7, 파송:NEWFAM.filter(f => f.stage === '정착 관찰').length + 7, 정착률:'6/9 (12주 뒤 60% 기준)', 장결전환:gbCount120('장결자') + gbCount120('재적 제외 대상'), 복귀:back120(), 사역:EVENTS.filter(e => !e.recurring).length + 1, 상시:ROUTLOG.length + 21, 연인원:'약 520', 교회지원금:`${won(F.churchIn)} / ${won(F.churchSpent)}`, 회비수입:F.duesIn + F.feeIn, 회비지출:F.duesSpent + F.feeSpent, 잔액:F.bal, 납부율:`${Math.round(100 * dues[1] / dues[0])}%`, 리더:27};
   const rows = [['목양', ['출석', '평균 주일 출석'], ['재적', '교적부 재적'], ['새가족등록', '새가족 등록'], ['파송', '셀 파송'], ['정착률', '정착률 (파송 12주 뒤)'], ['장결전환', '장결자 (4주 이상 결석)'], ['복귀', '다시 나옴']], ['사역', ['사역', '전체 사역'], ['상시', '상시 사역 (군선교 · 노방전도)'], ['연인원', '참여 연인원'], ['리더', '리더 수 (임원 · 셀리더 · 팀장)']], ['재정', ['교회지원금', '교회 지원금 받음 / 사용'], ['회비수입', '회비 · 수련회비 수입 (이월 포함)'], ['회비지출', '회비 · 수련회비 지출'], ['잔액', '연말 잔액'], ['납부율', '회비 납부율']]];
   const fmt = v => typeof v === 'number' ? won(v) : v;
   const Yn = showNext() ? [2025, 2026, 2027] : [2025, 2026];
@@ -5690,7 +5690,7 @@ V.cell = () => {
   const cells = Object.keys(CELLS), cur = myCell() || (cells.includes(V2.cellv) ? V2.cellv : cells[0]);
   if (!canCell() && isOfficerUp()) V2.cellv = '전체 표';
   if ((isOfficerUp() && V2.cellv === '전체 표') || (S.role === '목양국장' && V2.cellv === '보관함') || (S.role === '셀리더' && V2.cellv === '우리 셀 표')) return `<div class="eyebrow">${canCell() ? '우리 셀 · ' : ''}교적부</div><div class="sechead"><h1 class="display sm" style="margin:0">${V2.cellv}<em>${V2.cellv === '보관함' ? '목양국장만' : S.role === '셀리더' ? '우리 셀원 정보' : '임원 열람'}</em></h1><span class="tabs mtabs" style="margin-left:auto">${[...(canCell() ? (myCell() ? [myCell()] : cells) : []), S.role === '셀리더' ? '우리 셀 표' : '전체 표', ...(S.role === '목양국장' ? ['보관함'] : [])].map(c => `<button class="${c === V2.cellv ? 'on' : ''}" onclick="V2.cellv='${c}';render()">${['전체 표','보관함'].includes(c) ? c + (c === '보관함' && archiveCandidates().length ? ' !' : '') : cn(c)}</button>`).join('')}</span></div><div class="sec">${V2.cellv === '보관함' ? archiveView() : memberTable(S.role === '셀리더' ? myCell() : null)}</div>`;
-  const ms = CELLS[cur], n = ms.length, entered = WEEKS.length > WBASE() && ms.some(m => m.att.length === WEEKS.length), L = entered ? WEEKS.length - 1 : Math.min(WBASE() - 1, WEEKS.length - 1), wk = WEEKS[L] || '—';
+  const ms = CELLS[cur], n = rollN122(ms), entered = WEEKS.length > WBASE() && ms.some(m => m.att.length === WEEKS.length), L = entered ? WEEKS.length - 1 : Math.min(WBASE() - 1, WEEKS.length - 1), wk = WEEKS[L] || '—';
   const avg = f => (ms.reduce((s, m) => s + (m[f] || 0), 0) / n).toFixed(1);
   const al = cellAlerts(cur);
   const careOf = m => { const [lab, cls] = care(m, pctOf(m)); return `<span class="pill ${cls}" style="font-size:10.5px">${lab}</span>${m.star && canStar() ? ' <span class="pill navy" style="font-size:10.5px" title="리더 후보 — 1층만 봄">★ 후보</span>' : ''}`; };
@@ -5728,7 +5728,7 @@ function weekEntry(cell){
   const ms = CELLS[cell], entered = WEEKS.length > WBASE() && ms.some(m => m.att.length === WEEKS.length);
   const tog = (id, on, label) => `<label class="tog ${on ? 'on' : ''}" onclick="setTimeout(()=>this.classList.toggle('on',this.querySelector('input').checked))"><input type="checkbox" id="${id}" ${on ? 'checked' : ''}>${label}</label>`;
   const stp = (id, v, max) => `<span class="stp"><button type="button" onclick="stepN('${id}',-1,${max})" aria-label="하나 줄이기">−</button><input type="number" inputmode="numeric" min="0" max="${max}" id="${id}" value="${v}" onfocus="this.select()" onchange="stepN('${id}',0,${max})"><button type="button" onclick="stepN('${id}',1,${max})" aria-label="하나 늘리기">+</button></span>`;
-  modal(`<div class="head"><div><small>${cnS(cell)} · ${NEXTW()} (일)${entered ? ' · 수정' : ''}</small><h3>이번 주 출석 · 경건</h3></div><button class="x" onclick="closeModal()">×</button></div>
+  modal(`<div class="head"><div><small>${cnS(cell)} · ${NEXTW()} (일)${entered ? ' · 수정' : ''}</small><h3>이번 주 출석 · 경건</h3></div><button class="x" onclick="closeModal()">×</button></div>${privNote122('week')}
   <div class="cont" style="padding-top:6px"><style>.modal .box{width:min(820px,100%)}</style>
   <div class="wkbulk" id="wkbulk">한 번에 <button type="button" class="btn s" onclick="wkAll('d')">낮예배 모두</button><button type="button" class="btn s" onclick="wkAll('a')">청년부예배 모두</button><button type="button" class="btn s" onclick="wkAll('c')">셀모임 모두</button><span class="note">— 누른 뒤 빠진 사람만 풀어 주세요</span></div>
   ${ms.map((m, i) => { const last = m.att[m.att.length - 1] === 1; return `<div class="wkc"><div class="nm">${m.n}<small>${m.newc ? `새가족 ${m.newc}주차 · ` : ''}지난 주 ${m.att[WBASE() - 1] === 1 ? '출석' : m.att[WBASE() - 1] === 0 ? '결석' : '—'}</small></div>
@@ -5755,7 +5755,7 @@ function saveWeek(cell){ if (weekBlocked()) return; { const wn = document.getEle
 }
 function worshipLog98(wi){
   const past = typeof wi === 'number', cur = !past && WEEKS.length > WBASE() && WEEKS[WEEKS.length - 1] === NEXTW(), date = past ? wkISO(WEEKS[wi]) : cur ? WORSHIP.date : WORSHIP_LAST.date, L = past ? wi : cur ? WEEKS.length - 1 : 7;
-  const rows = Object.entries(CELLS).map(([c, ms]) => { const done = past ? ms.some(m => m.att.length > wi) : cur ? ms.some(m => m.att.length === WEEKS.length) : true; return {c, lead:(LEADERS.find(l => l.group === c) || {}).name || c, n:ms.length, done, a:done ? ms.filter(m => m.att[L] === 1).length : null, x:done ? ms.filter(m => m.att[L] === 0).length : null, ev:done ? ms.reduce((s, m) => s + m.ev, 0) : 0}; });
+  const rows = Object.entries(CELLS).map(([c, ms]) => { const done = past ? ms.some(m => m.att.length > wi) : cur ? ms.some(m => m.att.length === WEEKS.length) : true; return {c, lead:(LEADERS.find(l => l.group === c) || {}).name || c, n:rollN122(ms), done, a:done ? ms.filter(m => m.att[L] === 1).length : null, x:done ? ms.filter(m => inRoll122(m) && m.att[L] === 0).length : null, ev:done ? ms.reduce((s, m) => s + m.ev, 0) : 0}; });
   const R = rows.filter(r => r.done), T = R.reduce((o, r) => ({n:o.n + r.n, a:o.a + r.a, x:o.x + r.x, ev:o.ev + r.ev}), {n:0, a:0, x:0, ev:0}), miss = rows.filter(r => !r.done);
   const g = k => past && date !== WORSHIP_LAST.date ? (date === WORSHIP.date ? ((WORSHIP.items.find(i => i.k === k) || {}).value || '') : '') : cur ? ((WORSHIP.items.find(i => i.k === k) || {}).value || '') : (WORSHIP_LAST[k] || '');
   modal(`<div class="head"><div><small>1_운영 · 예배일지 · 자동 작성</small><h3>청년1부 예배일지 — ${md(date)}</h3><small>${past ? '지난 주일 기록.' : cur ? '이번 주일 — 셀리더 입력이 들어온 셀부터 채워집니다.' : `지난 주일 기준. ${NEXTW()} 입력이 들어오면 ${NEXTW()} 일지로 바뀝니다.`} 출력하면 이 모양 그대로.</small></div><button class="x" onclick="closeModal()">×</button></div>
@@ -5839,7 +5839,7 @@ function todaySummary(){ const it = inbox().filter(x => !x.g).slice(0, 5); const
 
 function leaderMeeting(){
   const L = WEEKS.length - 1, Lw = WEEKS[L];
-  const rows = Object.entries(CELLS).map(([c, ms]) => ({c, lead:(LEADERS.find(l => l.group === c) || {}).name || '', n:ms.length, att:ms.filter(m => m.att[L] === 1).length, resp:respRate(c), prev:(RESPHIST[c] || [])[0]}));
+  const rows = Object.entries(CELLS).map(([c, ms]) => ({c, lead:(LEADERS.find(l => l.group === c) || {}).name || '', n:rollN122(ms), att:ms.filter(m => m.att[L] === 1).length, resp:respRate(c), prev:(RESPHIST[c] || [])[0]}));
   const pri = Object.entries(CELLS).flatMap(([c, ms]) => ms.map(m => { const k = care(m, pctOf(m)); return ['bad','warn'].includes(k[1]) ? {c, m, k:k[0], lead:(LEADERS.find(l => l.group === c) || {}).name || ''} : null; }).filter(Boolean));
   const txt = [`[셀리더모임 목양 현황 — ${Lw} 기준]`, '', '① 셀별 응답률 · 출석', ...rows.map(r => `- ${r.c}(${r.lead}) 응답 ${r.resp}%${r.resp < 70 ? ' ⚠' : ''} · 출석 ${r.att}/${r.n}`), '', `② 우선 연락 ${pri.length}명 — 누가 맡을지`, ...pri.map(p => `- ${p.m.n} (${p.c}) · ${p.k}`), '', '③ 새가족', ...NEWFAM.map(f => `- ${f.n} · ${f.stage}${f.wk ? ` ${f.wk}주` : f.edu ? ` ${f.edu.filter(Boolean).length}/4` : ''}${f.cell !== '—' ? ' · ' + cn(f.cell) : ''}`), '', '④ 지난주 연락 결과', ...CONTACTS.map(x => `- ${x.who}: ${x.m} — ${x.r}`)].join('\n');
   const html = printShell('셀리더모임 — 목양 현황', `${Lw} 기준 · 목양국장 · 10~15분`, `<table class="ilji" style="width:100%;border-collapse:collapse;margin-top:10px">
@@ -5873,7 +5873,7 @@ function newfamForm(i){ const f = i === undefined ? null : NEWFAM[i];
   modal(`<div class="head"><div><small>새가족 명부 · ${f ? '수정' : '새가족 · 첫 주일'}</small><h3>${f ? esc(f.n) : '새가족 적기'}</h3></div><button class="x" onclick="closeModal()">×</button></div>
   <div class="cont"><form class="form" id="nff"><div class="cards c2" style="gap:10px"><label>이름 <input id="nf_n" value="${esc(f ? f.n : '')}" required></label><label>나이 <input id="nf_a" type="number" min="18" max="45" value="${f && f.age ? f.age : ''}"></label><label>연락처 <input id="nf_p" value="${esc(f ? f.phone || '' : '')}" placeholder="010-"></label><label>구분 <select id="nf_k">${KINDS.map(k => `<option ${f && f.kind === k ? 'selected' : ''}>${k}</option>`).join('')}</select></label><label>인도자 ${pick('nf_l', {val:f && f.lead !== '—' ? f.lead || '' : '', ph:'데려온 사람 — 이름을 치고 고르기 · 없으면 비움', label:'인도자'})}</label><label>상태 <select id="nf_j" onchange="document.getElementById('nf_jx').hidden=this.value!=='기타'">${JOBS.map(j => `<option ${f && (JOBS.includes(f.job) ? f.job === j : j === '기타') ? 'selected' : ''}>${j}</option>`).join('')}</select></label></div><label id="nf_jx" ${f && f.job && !JOBS.includes(f.job) ? '' : 'hidden'}>기타 — 직접 <input id="nf_jv" value="${esc(f && !JOBS.includes(f.job) ? f.job || '' : '')}"></label>
   ${f ? regBox119(f) : `<label>첫 방문일 <input id="nf_d" type="date" value="${TODAYISO}"></label><label>양육 담당 (새가족팀) <select id="nf_c"><option value="">미지정</option>${[...new Set([nameOf('새가족팀장'), ...Object.values(DEPTS).flatMap(D => (D.teams['새가족팀'] || []).map(m => m.n))].filter(Boolean))].map(n => `<option>${esc(n)}</option>`).join('')}</select></label>`}
-  <div style="display:flex;gap:8px"><button class="btn p">${f ? '저장' : '명부에 넣기'}</button><button type="button" class="btn" onclick="closeModal()">취소</button></div></form><p class="note" style="margin-top:8px">수집 안내: 이름 · 연락처는 청년부 새가족 돌봄에만 쓰고, 등록 확정일 1년 뒤까지 파송되지 않으면 명부에서 지웁니다(목양 규정 7장 · 10장).</p></div>`, () => {
+  <div style="display:flex;gap:8px"><button class="btn p">${f ? '저장' : '명부에 넣기'}</button><button type="button" class="btn" onclick="closeModal()">취소</button></div></form><p class="note" style="margin-top:8px">수집 안내: 이름 · 연락처는 청년부 새가족 돌봄에만 쓰고, 등록 확정일 1년 뒤까지 파송되지 않으면 명부에서 지웁니다(목양 규정 7장 · 10장).</p>${privNote122('newfam')}</div>`, () => {
     document.getElementById('nf_n').focus(); document.getElementById('nff').onsubmit = e => { e.preventDefault(); const g = k => (document.getElementById(k) || {}).value || ''; const n = g('nf_n').trim(); if (!n) return; const job = g('nf_j') === '기타' ? (g('nf_jv').trim() || '기타') : g('nf_j');
       const rec = {n, age:+g('nf_a') || undefined, phone:g('nf_p').trim(), kind:g('nf_k'), lead:g('nf_l').trim() || '—', job};
       if (f) { Object.assign(f, rec); if (document.getElementById('nf_r')) f.reg = g('nf_r'); log('새가족', '정보 수정', n); } else { NEWFAM.push(Object.assign(rec, {stage:'방문', cell:'—', care:g('nf_c').trim() || '미지정', since:g('nf_d') || TODAYISO, last:g('nf_d') || TODAYISO})); log('새가족', '새가족 등록', n); }
@@ -5909,7 +5909,7 @@ function boardPack(){
     const none = A.filter(a => !a[1].length).map(a => a[0]);
     body = `<div class="ag">${A.map(a => sec(a[0], a[1], a[2])).join('')}${none.length ? `<p class="note" style="margin:10px 0 0">없음 — ${none.join(' · ')}</p>` : ''}</div>`; }
   if (cur === '목양 보고') body = `<div class="cards c2" style="gap:8px">${Object.entries(cls).map(([k, v]) => statCard('◍', v + '명', k)).join('')}</div>
-    <div class="tblwrap sec"><table class="tbl"><tr><th>셀</th><th>출석률 (누적)</th><th>응답률 (최근)</th></tr>${Object.entries(CELLS).map(([c, ms]) => `<tr><td><b>${c}</b></td><td>${Math.round(ms.reduce((a, m) => a + pctOf(m), 0) / ms.length)}%</td><td style="color:${respRate(c) < 70 ? 'var(--bad)' : 'inherit'}">${respRate(c)}%</td></tr>`).join('')}</table></div>
+    <div class="tblwrap sec"><table class="tbl"><tr><th>셀</th><th>출석률 (누적)</th><th>응답률 (최근)</th></tr>${Object.entries(CELLS).map(([c, ms]) => `<tr><td><b>${c}</b></td><td>${Math.round(ms.filter(inRoll122).reduce((a, m) => a + pctOf(m), 0) / (rollN122(ms) || 1))}%</td><td style="color:${respRate(c) < 70 ? 'var(--bad)' : 'inherit'}">${respRate(c)}%</td></tr>`).join('')}</table></div>
     <div class="cards c2 sec" style="gap:8px">${statCard('⊕', STAGES.map(st => NEWFAM.filter(f => f.stage === st).length).join(' · '), '<span style="white-space:normal;display:block">새가족 단계별<br>(방문 · 등록 · 교육 · 파송 · 관찰)</span>')}${statCard('☏', VISITS.filter(v => v.date.slice(0, 7) === TODAYISO.slice(0, 7)).length + '건', '이번 달 심방 · 다음 연락 지난 건 ' + visitLate().length)}</div>`;
   if (cur === '생각 모음') body = ideaBody();
   if (cur === '재정 보고') body = `<div class="cards c2" style="gap:8px">${statCard('₩', won(F.churchBal), `교회 지원금 잔액 · 집행률 ${Math.round(100 * F.churchSpent / F.churchIn)}%`)}${statCard('₩', sgn(F.feeBal), '수련회비 잔액' + (feeUnsettled().length ? ' · 정산할 사역 ' + feeUnsettled().map(x => x.name).join(' · ') : ''))}${statCard('₩', won(F.duesBal), '회비 잔액')}</div>
@@ -6056,7 +6056,7 @@ function monthClose(){ const m = prevMonth(), mn = MONTHS[m - 1], rows = LEDGER.
   </div>${done ? `<div class="callout" style="margin:12px 0 0">${mn} 마감 — 장부 탭에 "마감" 표시. 실물 영수증은 월별 봉투 하나에 모아 PDF와 같이 제출.</div>` : `<p class="note" style="margin-top:10px">실물 영수증은 월별 봉투 하나에 모아 PDF와 같이 제출. 다 체크되면 "${mn} 마감"으로 장부가 잠깁니다.</p>`}</div>`); }
 const CELLNOTE = {'2026:은혜셀':{t:'새가족 정하린이 처음으로 기도제목을 나눔 · 다음 주 셀모임은 야외에서'}};
 function cellReport98(cell){
-  const ms = CELLS[cell], L = WEEKS.length - 1, n = ms.length, a = f => (ms.reduce((s, m) => s + (m[f] || 0), 0) / n).toFixed(1);
+  const ms = CELLS[cell], L = WEEKS.length - 1, n = rollN122(ms) || 1, a = f => (ms.reduce((s, m) => s + (m[f] || 0), 0) / n).toFixed(1);
   let txt = `[${cn(cell)} 셀보고서 (${cell}) — ${WEEKS[L]}]\n출석: ${ms.filter(m => m.att[L] === 1).length}/${n}\n결석: ${ms.filter(m => m.att[L] === 0).map(m => m.n + (m.att.slice(-3).every(v => v === 0) ? '(3주째)' : '')).join(', ') || '없음'}\n주간 응답: ${ms.filter(m => m.resp).length}/${n}\n경건 평균: 말씀 ${a('word')}일 · 큐티 ${a('qt')}일 · 전도 ${ms.reduce((s, m) => s + m.ev, 0)}명\n새가족: ${ms.filter(m => m.newc).map(m => `${m.n}(${m.newc}주차)`).join(', ') || '없음'}\n\n기도제목\n${ms.filter(m => m.pray).map(m => `- ${m.n}: ${m.pray}`).join('\n')}`;
   const nt = CELLNOTE[S.year + ':' + cell]; if (nt && nt.t) txt += `\n셀리더 한 줄: ${nt.t}`;
   modal(`<div class="head"><div><small>자동 작성 · 예시 형식</small><h3>${cn(cell)} 셀보고서 <small class="note">${cell}</small></h3></div><button class="x" onclick="closeModal()">×</button></div><div class="cont"><pre class="preview">${esc(txt)}</pre><div style="display:flex;gap:8px;margin-top:12px"><button class="btn p" onclick='copy(${AJ(txt)}, "셀보고서를 복사했습니다")'>복사</button><button class="btn" onclick="closeModal()">닫기</button></div></div>`);
@@ -6905,8 +6905,8 @@ V.org = () => {
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;align-items:start">${DEPT_HEADS.map(dbox).join('')}</div></div>
       ${TEAMS.some(t => !TEAM_DEPT[t]) ? `<div><small class="note" style="font-weight:700">그 밖의 팀</small><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">${TEAMS.filter(t => !TEAM_DEPT[t]).map(t => box(t, (USERS.find(u => u.team === t) || {}).name || '—', obx)).join('')}</div></div>` : ''}
     </div></div>
-  <div class="sechead sec" style="flex-wrap:wrap;gap:8px"><h2 style="font-size:15px">셀 편성표 ${S.year}</h2><span style="margin-left:auto"></span>${gate(S.role === '목양국장', `<button class="btn s" onclick="cellBoard()">셀 편성판 보기</button>`, '목양국장')}<span class="note" id="cbwho">편성은 관리자 › 셀 편성</span></div>
-  <div class="cards">${Object.entries(CELLS).map(([c, ms]) => `<div class="card"><div class="svtop"><b>${cn(c)}</b><span class="note">${c} · ${ms.length}명</span></div><p style="margin:6px 0 2px;font-size:13px"><span class="pill navy">셀리더</span> ${cellLeader(c)} <span class="note">· 부리더 ${ms[0] ? ms[0].n : '—'}</span></p><p style="margin:0;font-size:13px;line-height:1.7">${ms.map(m => m.n + (m.newc ? ' <span class="pill ok" style="font-size:10px">새</span>' : '')).join(' · ')}</p></div>`).join('')}</div>
+  <div class="sechead sec" style="flex-wrap:wrap;gap:8px"><h2 style="font-size:15px">셀 편성표 ${S.year}</h2><span style="margin-left:auto"></span>${gate(['지도목사', '부장', '회장', '목양국장'].includes(S.role), `<button class="btn s" onclick="cellBoard()">셀 편성판 보기</button>`, '지도목사 · 부장 · 회장 · 목양국장')}<span class="note" id="cbwho">편성은 관리자 › 셀 편성</span></div>
+  <div class="cards">${Object.entries(CELLS).map(([c, ms]) => `<div class="card"><div class="svtop"><b>${cn(c)}</b><span class="note">${c} · ${rollN122(ms)}명${spN122(ms)}</span></div><p style="margin:6px 0 2px;font-size:13px"><span class="pill navy">셀리더</span> ${cellLeader(c)} <span class="note">· 부리더 ${ms[0] ? ms[0].n : '—'}</span></p><p style="margin:0;font-size:13px;line-height:1.7">${ms.map(m => m.n + (m.newc ? ' <span class="pill ok" style="font-size:10px">새</span>' : '')).join(' · ')}</p></div>`).join('')}</div>
   
   <div class="sechead sec"><h2 style="font-size:15px">톡방</h2><span style="margin-left:auto"></span></div>
   <div class="tblwrap"><table class="tbl mtbl"><thead><tr><th>방</th><th>누가</th><th>방장</th><th>오가는 이야기</th></tr></thead><tbody>${CHATS.map(([r, w, o, t]) => `<tr><td class="full"><b>${r}</b></td><td data-l="누가">${w}</td><td data-l="방장">${o}</td><td data-l="이야기">${t}</td></tr>`).join('')}</tbody></table></div>
@@ -7753,7 +7753,7 @@ function subParts(o){ let P = Object.entries(o).filter(x => x[1]).sort((a, b) =>
 
 /* ---------- 셀 보고서 (문서) ---------- */
 const sunNo = iso => { const d = pd(iso), j = new Date(d.getFullYear(), 0, 1), f = new Date(j); f.setDate(1 + (7 - j.getDay()) % 7); return Math.floor((d - f) / 864e5 / 7) + 1; };
-function cellReport(cell){ V2.dkRe = () => cellReport(cell); const ms = CELLS[cell] || [], L = WEEKS.length - 1, n = ms.length, w = WEEKS[L] || '', date = w ? wkISO(w) : TODAYISO, lead = cellLeader(cell) || '';
+function cellReport(cell){ V2.dkRe = () => cellReport(cell); const ms = CELLS[cell] || [], L = WEEKS.length - 1, n = rollN122(ms), w = WEEKS[L] || '', date = w ? wkISO(w) : TODAYISO, lead = cellLeader(cell) || '';
   const av = f => n ? (ms.reduce((s, m) => s + (m[f] || 0), 0) / n).toFixed(1) : '0', att = ms.filter(m => m.att[L] === 1).length, resp = ms.filter(m => m.resp).length, ev = ms.reduce((s, m) => s + (m.ev || 0), 0), nf = ms.filter(m => m.newc);
   const dots = m => { const s = [5, 4, 3, 2, 1, 0].map(k => { const v = m.att[L - k]; return v === 1 ? '●' : v === 0 ? '○' : '·'; }); return `<span class="dots">${s.slice(0, 3).join('')}<br>${s.slice(3).join('')}</span>`; };
   const look = m => { const a = k => m.att[L - k]; if (a(0) === 0 && a(1) === 0 && a(2) === 0) return '<b>3주째 결석</b> → 연락'; if (a(0) === 0) return '이번 주 결석'; if (a(0) === 1 && a(1) === 1 && a(3) === 0 && a(4) === 0 && a(5) === 0) return '3주 쉬고 돌아옴'; return m.newc ? `새가족 ${m.newc}주차` : ''; };
@@ -7778,7 +7778,7 @@ function visitPaper(v){ if (v.secret && !canVisit()) return; V2.dkRe = () => vis
 /* ---------- 예배일지 (교회 양식 · 직접 서명) ---------- */
 function worshipLog(wi){ V2.dkRe = () => worshipLog(wi);
   const past = typeof wi === 'number', cur = !past && WEEKS.length > WBASE() && WEEKS[WEEKS.length - 1] === NEXTW(), date = past ? wkISO(WEEKS[wi]) : cur ? WORSHIP.date : WORSHIP_LAST.date, L = past ? wi : cur ? WEEKS.length - 1 : 7;
-  const rows = Object.entries(CELLS).map(([c, ms]) => { const done = past ? ms.some(m => m.att.length > wi) : cur ? ms.some(m => m.att.length === WEEKS.length) : true; return {c, lead:(LEADERS.find(l => l.group === c) || {}).name || c, n:ms.length, done, a:done ? ms.filter(m => m.att[L] === 1).length : null, x:done ? ms.filter(m => m.att[L] === 0).length : null, ev:done ? ms.reduce((s, m) => s + m.ev, 0) : 0}; });
+  const rows = Object.entries(CELLS).map(([c, ms]) => { const done = past ? ms.some(m => m.att.length > wi) : cur ? ms.some(m => m.att.length === WEEKS.length) : true; return {c, lead:(LEADERS.find(l => l.group === c) || {}).name || c, n:rollN122(ms), done, a:done ? ms.filter(m => m.att[L] === 1).length : null, x:done ? ms.filter(m => inRoll122(m) && m.att[L] === 0).length : null, ev:done ? ms.reduce((s, m) => s + m.ev, 0) : 0}; });
   const R = rows.filter(r => r.done), T = R.reduce((o, r) => ({n:o.n + r.n, a:o.a + r.a, x:o.x + r.x, ev:o.ev + r.ev}), {n:0, a:0, x:0, ev:0}), miss = rows.filter(r => !r.done);
   const g = k => past && date !== WORSHIP_LAST.date ? (date === WORSHIP.date ? ((WORSHIP.items.find(i => i.k === k) || {}).value || '') : '') : cur ? ((WORSHIP.items.find(i => i.k === k) || {}).value || '') : (WORSHIP_LAST[k] || '');
   const duty = g('duty'), pick = re => ((duty.match(re) || [])[1] || '—').trim(), sermon = g('sermon'), evs = EVENTS.filter(e => days(e.date) - days(date) >= 0 && days(e.date) - days(date) <= 14).map(e => e.name + ' ' + mdS(e.date)).join(' · ') || '—';
@@ -7836,7 +7836,7 @@ function monthMinistry(m){ const Y = YNOW(); V2.dkRe = () => monthMinistry(m); c
   ${pxH(4, '부장님께')}${dkT(null, [`<tr><td class="k" style="width:96px">승인 대기</td><td>${SN.wait.length ? SN.wait.map(([a, b]) => esc(a) + ` <span class="mu">(${esc(b)})</span>`).join(' · ') : '없음'}</td></tr>`, `<tr><td class="k">회장 한 줄</td><td style="height:40px">${esc(REPNOTE[key] || '')}</td></tr>`])}`;
   modal(`<div class="head"><div><small>사역 · 월 보고 · 회장 → 부장님</small><h3>${m}월 사역 보고</h3></div><button class="x" onclick="closeModal()">×</button></div><div class="cont">${printShell('사역 보고', '', {px:{big:'사역 보고', subLine:`${Y}년 ${m}월 · 회장 → 부장님`, no:`${Y}-사역-${mmOf(m)}`, fn:`${m}월 사역 보고`, box:dkStd({okKey:key, kind:'월 사역 보고', by:'회장', date}),
     keys:[['기간', `${Y}. ${m}. 1. ~ ${+monthEnd(Y, m).slice(8)}.`], ['보고', `${md(date)} · 부장님`]], body, close:dkClose(`위와 같이 ${m}월 사역을 보고합니다.`, date, '회장', pName('회장')), path:'1_운영 › 월 보고 · 1 ~ 3은 사역 보드 · 국 기록에서'}}, '', false, {btns:repRedoBtn(key, '회장')})}${S.role === '회장' ? dkNote(key, '회장 한 줄') : ''}</div>`); }
-function monthShepherd(m){ const Y = YNOW(); V2.dkRe = () => monthShepherd(m); const pre = `${Y}-${mmOf(m)}`, date = firstNext(Y, m), key = `ms:${pre}`, all = Object.values(CELLS).flat(), reg = all.length;
+function monthShepherd(m){ const Y = YNOW(); V2.dkRe = () => monthShepherd(m); const pre = `${Y}-${mmOf(m)}`, date = firstNext(Y, m), key = `ms:${pre}`, all = Object.values(CELLS).flat(), reg = rollN122(all);
   const wk = WEEKS.map((w, i) => ({w, i, iso:wkISO(w)})), cur = wk.filter(x => x.iso.startsWith(pre)), pm = m === 1 ? 12 : m - 1, ppre = `${m === 1 ? Y - 1 : Y}-${mmOf(pm)}`, prev = wk.filter(x => x.iso.startsWith(ppre));
   const cnt = i => all.filter(p => p.att[i] === 1).length, avg = A => A.length ? A.reduce((a, x) => a + cnt(x.i), 0) / A.length : 0, pc = v => reg ? Math.round(100 * v / reg) + '%' : '—';
   const nf = NEWFAM.filter(f => String(f.since).startsWith(pre)), lost = NEWFAM.filter(f => f.stage === '교육' && f.last && f.last < shift(monthEnd(Y, m), -28)), lastI = cur.length ? cur[cur.length - 1].i : WEEKS.length - 1, abs3 = all.filter(p => [0, 1, 2].every(k => p.att[lastI - k] === 0)).length;
@@ -9756,6 +9756,22 @@ CHANGELOG.unshift(['2026-11-27', '', '목양 — 고3 진급자는 1월 1일부�
   '고3 진급자는 그해 1월 1일부터 상태가 "출석"입니다(어제 넣은 3월 1일에서 바꿨습니다). "진급"은 12월에 미리 올려 둔 사람의 표시이고, 1월 1일이 되면 저절로 바뀝니다',
   '상태가 바뀌어도 새가족 화면의 "고3 진급 새내기" 명단과 보고서의 진급 인원은 그대로 남습니다 — 교적부에 "진급 연도" 칸이 생겼습니다',
   '2월 말까지는 전체 표에 "진급 새내기" 표시가 붙습니다(새가족팀과 셀리더가 함께 돌보는 기간)']]);
+
+/* v122 — 목양 ③: 인원은 특별관리를 빼고 셈 · 개인정보 안내문 · 셀 편성판 보기(규정 v0.3 목양 5.2 ③ · 8장 · 10장 ②)   같이: patch122.py */
+function inRoll122(m){ return !!m && m.status !== '특별관리'; }   // 출석률의 분모 · 셀 인원에 드는 사람(출석자 + 결석자 + 장결자)
+function rollN122(ms){ return (ms || []).filter(inRoll122).length; }
+function spN122(ms){ const k = (ms || []).length - rollN122(ms); return k ? ` · 특별관리 ${k}` : ''; }
+function privNote122(kind){ const wk = kind === 'week';
+  return `<details class="priv122 note" style="margin:${wk ? '0 18px 2px' : '8px 0 0'};font-size:12px"><summary style="cursor:pointer">개인정보 안내 — 왜 받고 · 누가 보고 · 언제 지우나</summary><div style="margin-top:6px;display:grid;gap:4px;line-height:1.55">
+    <div><b>수집 목적</b> 출석 · 정착 관리, 셀 · 사역 운영, 생일 알림, 회비 안내, 외부 기관 출입 명단</div>
+    <div><b>보는 사람</b> ${wk ? '지도목사 · 부장 · 임원, 셀리더는 자기 셀. 기도제목은 지도목사 · 부장 · 회장 · 목양국장과 자기 셀 셀리더만' : '지도목사 · 부장 · 회장 · 목양국장 · 새가족팀장(명부는 총무도)'}</div>
+    <div><b>보관 기간</b> ${wk ? '주간 입력과 기도제목은 2년 뒤 이름을 지우고 통계만 남깁니다. 교적 정보는 재적인 동안 두고, 재적에서 빠지면 3년 뒤 파기합니다' : '등록 확정일 1년 뒤까지 파송되지 않으면 명부에서 지웁니다. 파송되면 교적부로 옮겨 재적인 동안 둡니다'}</div>
+    <div>주소 · 학교/직장은 원하지 않으면 적지 않아도 됩니다. 주민등록번호는 받지 않습니다 (목양 규정 3장 · 10장)</div></div></details>`; }
+
+CHANGELOG.unshift(['2026-11-27', '', '목양 — 인원은 특별관리를 빼고 셈 · 개인정보 안내문', [
+  '셀과 전체의 출석 · 응답 인원, 예배일지와 월 목양 보고의 재적, 셀 편성판의 셀 인원은 특별관리인 사람을 빼고 셉니다(셀 명단에는 그대로 있고 "특별관리 n"으로 따로 적힙니다)',
+  '주간 입력 창의 머리와 새가족 입력 창 아래에 "개인정보 안내"를 넣었습니다 — 수집 목적 · 보는 사람 · 보관 기간(눌러서 펴 봄)',
+  '셀 편성판 보기는 지도목사 · 부장 · 회장 · 목양국장이 엽니다(전에는 목양국장만). 편성 입력은 그대로 관리자']]);
 
 autoBdayNotice();
 render();
