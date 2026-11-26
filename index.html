@@ -3150,7 +3150,7 @@ function absReview(){ if (S.role !== '목양국장') { noPerm('목양국장'); r
     return `<div class="carerow" style="align-items:center"><div style="min-width:0"><b>${esc(m.n)}</b> <span class="note">${esc(cn(c))}</span> ${carePill({n:m.n})}<small class="note">연락 ${cr ? cr.log.length : 0}번${cr && cr.last ? ' · 마지막 ' + mdS(cr.last) : ''}</small></div>${pend ? '<span class="pill warn">지도목사 승인 기다림</span>' : `<select id="ab_${k}" data-n="${esc(m.n)}" aria-label="${esc(m.n)} 결정"><option value="">계속 돌봄${a && !a.carry ? ' (다음 해로 이월)' : ''}</option><option value="out">재적 제외 요청</option></select>`}</div>`; }).join('') : '<div class="empty">재적 제외 대상이 없습니다 — 6개월 넘게 결석한 사람이 없습니다.</div>'}
   <div style="display:flex;gap:8px;margin-top:10px"><button class="btn p">저장</button><button type="button" class="btn" onclick="closeModal()">닫기</button></div></form></div>`, () => {
     document.getElementById('abf').onsubmit = e => { e.preventDefault(); const out = [...document.querySelectorAll('#abf select')].filter(x => x.value === 'out').map(x => x.dataset.n);
-      out.forEach(n => { const cr = CARE.find(x => x.n === n), a = absOf(n); EX.approvals.push({id:Math.max(0, ...EX.approvals.map(x => x.id)) + 1, name:`${n} 재적 제외 — 6개월 이상 결석`, type:'재적 정리', owner:'목양국장', date:`${mdS(TODAYISO)} 요청`, status:'대기', who:n, detail:{since:a ? a.since : '', carry:a ? a.carry : false, calls:cr ? cr.log.length : 0, last:cr ? cr.last : ''}}); });
+      out.forEach(n => { const cr = CARE.find(x => x.n === n), a = absOf(n); EX.approvals.push({id:Math.max(0, ...EX.approvals.map(x => x.id)) + 1, name:`${n} 재적 제외 — 6개월 이상 결석`, type:'재적 정리', owner:'목양국장', date:`${mdS(TODAYISO)} 요청`, status:'대기', who:n, to:'재적 제외', detail:{since:a ? a.since : '', carry:a ? a.carry : false, calls:cr ? cr.log.length : 0, last:cr ? cr.last : ''}}); });
       log('목양', '재적 제외 협의', `${L.length}명 중 재적 제외 요청 ${out.length}`); closeModal(); render(); toast(out.length ? `재적 제외 요청 ${out.length}건 — 지도목사 확인을 기다립니다` : '모두 계속 돌봄으로 두었습니다'); }; }); }
 function rollClear(id){ const a = EX.approvals.find(x => x.id === id); if (!a || S.role !== '목양국장') { noPerm('목양국장'); return; } const hit = absList().find(x => x.m.n === a.who); if (!hit) { toast('교적부에서 찾지 못했습니다'); return; }
   arPut120({n:hit.m.n, cell:hit.c, status:'재적 제외', at:TODAYISO, by:'목양국장', reason:`6개월 이상 결석 — 협의 · 지도목사 확인 (연락 ${a.detail.calls}번)`, m:arKeep120(hit.m)}, true); CELLS[hit.c].splice(hit.i, 1); const ci = CARE.findIndex(x => x.n === a.who); if (ci >= 0) CARE.splice(ci, 1);
@@ -3274,7 +3274,7 @@ function memberEdit(cell, i){
     <label>성별 <select id="me_x">${['', '남', '여'].map(x => `<option value="${x}" ${x === (m.sex || '') ? 'selected' : ''}>${x || '—'}</option>`).join('')}</select></label>
     <label>셀 <select id="me_c">${cells.map(c => `<option value="${c}" ${c === cell ? 'selected' : ''}>${cnS(c)}</option>`).join('')}</select></label><label>상태 <select id="me_s" onchange="spTog120()">${STATUSES.filter(x => x !== '특별관리' || sp120On() || m.status === x).map(x => `<option ${x === m.status ? 'selected' : ''}>${x}</option>`).join('')}</select></label>${spBox120(m)}</div>
     <label>비고 <input id="me_n" value="${esc(m.note || '')}" placeholder="직장 · 학교 · 특이사항 (셀리더는 못 봄)"></label>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn p">저장</button><span class="note">셀을 바꾸면 셀 편성표에도 바로 반영 · 지도목사 확인은 통화로</span>${m.createdAt === TODAYISO ? `<button type="button" class="btn s ghost" style="margin-left:auto" onclick="CELLS['${cell}'].splice(${i},1);log('우리 셀','입력 취소','오늘 넣은 사람');closeModal();render();toast('입력을 취소했습니다 — 오늘 넣은 사람이라 바로 지워짐')">입력 취소 (오늘 넣음)</button>` : `<span style="margin-left:auto"></span>`}</div></form></div>`, () => {
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn p">저장</button><span class="note">셀을 바꾸면 셀 편성표에도 바로 반영 · 지도목사 확인은 통화로</span>${m.createdAt === TODAYISO ? `<button type="button" class="btn s ghost" style="margin-left:auto" onclick="dropNow124('${cell}',${i})">입력 취소 (오늘 넣음)</button>` : `<span style="margin-left:auto"></span>`}</div>${dropBox124(cell, i)}<div style="display:none"></div></form></div>`, () => {
     document.getElementById('mef').onsubmit = e => { e.preventDefault(); const g = id => document.getElementById(id).value;
       m.phone = g('me_p').trim(); m.bday = g('me_b') || m.bday; m.sex = g('me_x') || undefined; m.note = g('me_n').trim(); const nc = g('me_c'), ns = g('me_s'); let msg = '저장했습니다';
       if (nc !== cell) { CELLS[cell].splice(i, 1); CELLS[nc].push(m); PRAY.filter(p => p.n === m.n).forEach(p => p.c = nc); log('우리 셀', '셀 이동', `${m.n} · ${cell} → ${nc}`); msg = `${nc}로 옮겼습니다 — 셀 편성표 반영`; }
@@ -3319,7 +3319,7 @@ function memberTable(only){
 /* 교적부 새 사람 — 전입자 등. 새가족은 새가족 명부 → 파송으로 */
 function memberNew(){ const cells = Object.keys(CELLS);
   modal(`<div class="head"><div><small>교적부 · 새 사람 · 목양국장</small><h3>교적부에 바로 넣기</h3></div><button class="x" onclick="closeModal()">×</button></div>
-  <div class="cont"><form class="form" id="mnf2"><div class="cards c2" style="gap:10px"><label>이름 <input id="mn_n" required></label><label>생일 <input id="mn_b" type="date"></label><label>연락처 <input id="mn_p" placeholder="010-"></label><label>셀 <select id="mn_c">${cells.map(c => `<option value="${c}">${cnS(c)}</option>`).join('')}</select></label><label>상태 <select id="mn_s"><option>출석</option><option>진급</option><option>복귀</option></select></label><label>등록일 (사역 가능일 계산) <input id="mn_r" type="date" value="${TODAYISO}"></label></div><label>비고 <input id="mn_m" placeholder="전입 교회 · 사정"></label>
+  <div class="cont"><form class="form" id="mnf2"><div class="cards c2" style="gap:10px"><label>이름 <input id="mn_n" required></label><label>생일 <input id="mn_b" type="date"></label><label>연락처 <input id="mn_p" placeholder="010-"></label><label>셀 <select id="mn_c">${cells.map(c => `<option value="${c}">${cnS(c)}</option>`).join('')}</select></label><label>상태 <select id="mn_s"><option>출석</option><option>진급</option></select></label><label>등록일 (사역 가능일 계산) <input id="mn_r" type="date" value="${TODAYISO}"></label></div><label>비고 <input id="mn_m" placeholder="전입 교회 · 사정"></label>
   <div style="display:flex;gap:8px;align-items:center"><button class="btn p">넣기</button><span class="note">등록일 + ${CARE_RULE.serveMonths}개월 뒤 사역 가능. 기존 교인이면 등록일을 비워도 됩니다</span></div></form></div>`, () => {
     document.getElementById('mn_n').focus(); document.getElementById('mnf2').onsubmit = e => { e.preventDefault(); const g = k => document.getElementById(k).value.trim(), n = g('mn_n'); if (!n) return; if (Object.values(CELLS).flat().some(m => m.n === n)) { toast('같은 이름이 교적부에 있습니다 — 비고로 구분해 주세요'); }
       CELLS[g('mn_c')].push({n, att:WEEKS.slice(0, WBASE()).map(() => null), word:0, qt:0, ev:0, resp:false, pray:'', bday:g('mn_b') || undefined, phone:g('mn_p'), status:g('mn_s'), statusAt:TODAYISO, reg:g('mn_r') || undefined, note:g('mn_m'), cellAtt:0, createdAt:TODAYISO});
@@ -8322,8 +8322,8 @@ function sheetTabs(lite){
   tab(F1, '연간요약', '노랑', '다락방(1월)', '지난 해를 볼 때 이것만 읽음 — 1월에 전년 숫자를 확정해 한 줄', ['연도', '목양(JSON)', '사역(JSON)', '재정(JSON)', '확정일', ...(srvAtLeast(SRV26C) ? ['서술(JSON)'] : [])], srvAtLeast(SRV26C) ? anRows114() : []);
 
   // ================= 목양 마스터
-  tab(F2, '교적부', '노랑', '다락방', '한 사람 한 줄. 셀이 비면 미배정(셀 편성판 아래 칸). 줄을 지우지 않고 보관함으로', ['ID', '이름', '생일', '성별|남,여', '연락처', '셀', '셀 역할', '상태|출석,진급,특별관리,전출,졸업,보관', '상태 변경일', '등록일', '입력일', '인도자', '주소', '학교/직장', '비고', '전년 셀', '전년 분류|핵심,안정,관심,돌봄 필요,장결자', '리더 후보', ...(srvAtLeast(SRV27B) ? ['마지막 출석', '특별관리 사유', '돌아오는 때'] : []), ...(srvAtLeast(SRV27C) ? ['진급 연도'] : [])],
-    mem.map(([c, m]) => [mid(m.n), m.n, N(m.bday), N(m.sex), N(m.phone), c, m.vice ? '부리더' : '', N(stOut120(m)), N(m.statusAt), N(m.reg), '', N(m.lead), N(m.addr), N(m.job), N(m.note), N(m.prevCell), N(prevOut120(m.prev)), Y(m.star), ...(srvAtLeast(SRV27B) ? [N(m.absFrom), N(m.spWhy), N(m.spBack)] : []), ...(srvAtLeast(SRV27C) ? [N(m.promoY)] : [])]).concat(arRows120().map(r => srvAtLeast(SRV27C) ? r.concat(['']) : r)));
+  tab(F2, '교적부', '노랑', '다락방', '한 사람 한 줄. 셀이 비면 미배정(셀 편성판 아래 칸). 줄을 지우지 않고 보관함으로', ['ID', '이름', '생일', '성별|남,여', '연락처', '셀', '셀 역할', '상태|출석,진급,특별관리,전출,졸업,보관,취소,지움', '상태 변경일', '등록일', '입력일', '인도자', '주소', '학교/직장', '비고', '전년 셀', '전년 분류|핵심,안정,관심,돌봄 필요,장결자', '리더 후보', ...(srvAtLeast(SRV27B) ? ['마지막 출석', '특별관리 사유', '돌아오는 때'] : []), ...(srvAtLeast(SRV27C) ? ['진급 연도'] : [])],
+    mem.map(([c, m]) => [mid(m.n), m.n, N(m.bday), N(m.sex), N(m.phone), c, m.vice ? '부리더' : '', N(stOut120(m)), N(m.statusAt), N(m.reg), '', N(m.lead), N(m.addr), N(m.job), N(m.note), N(m.prevCell), N(prevOut120(m.prev)), Y(m.star), ...(srvAtLeast(SRV27B) ? [N(m.absFrom), N(m.spWhy), N(m.spBack)] : []), ...(srvAtLeast(SRV27C) ? [N(m.promoY)] : [])]).concat(arRows120().map(r => srvAtLeast(SRV27C) ? r.concat(['']) : r)).concat(dropRows124()));
   tab(F2, '주간', '노랑', '다락방', '셀리더 주간 입력 — 주일마다 사람마다 한 줄. (예시 자료는 예배만 주별로 있고 말씀 · 큐티 · 전도는 합계뿐이라 비움)', ['주일', '셀', '교적부 ID', '이름', '예배', '셀모임', '말씀(일)', '큐티(일)', '전도', '입력자', '입력 시각'],
     mem.flatMap(([c, m]) => (m.hist && Object.keys(m.hist).length ? Object.entries(m.hist).map(([w, h]) => [wkISO(w), c, mid(m.n), m.n, N(h.a), N(h.c), N(h.w), N(h.q), N(h.e), N(h.by), N(h.at)]) : (m.att || []).map((v, i) => v === null || v === undefined ? null : [WEEKS[i], c, mid(m.n), m.n, v, '', '', '', '', '', '']).filter(Boolean))));
   tab(F2, '기도제목', '노랑', '다락방', '제목 하나가 한 줄 — 셀리더는 자기 셀만', ['No', '날짜', '셀', '교적부 ID', '이름', '제목', '입력자'], nid(PRAY).map((x, i) => [x.id, x.d, x.c, mid(x.n), x.n, x.text, '']));
@@ -8331,7 +8331,7 @@ function sheetTabs(lite){
   tab(F2, '새가족명부', '노랑', '다락방', '', ['No', '이름', '나이', '연락처', '구분|기신자,태신자', '인도자', '상태', '양육 담당', '첫 방문일', '단계', '주차', '교육(4)', '마지막 연락', '파송일', '셀', '주소', ...(srvAtLeast(SRV27A) ? ['등록 확정일'] : [])], nid119(NEWFAM).map((x, i) => [x.id, x.n, N(x.age), N(x.phone), x.kind, N(x.lead), N(x.job), N(x.care), x.since, x.stage, N(x.wk), A(x.edu), N(x.last), N(x.sent), N(x.cell), N(x.addr), ...(srvAtLeast(SRV27A) ? [N(x.reg)] : [])]).concat(nfGoneRows119()));
   tab(F2, '새가족심방', '노랑', '다락방', '새가족 심방 기록 — 장부에는 "새가족 심방 n명"만', ['No', '일자', '대상들', '동행자', '청년 동행', '동행 이유', '인원', '금액', '결제 수단', '단가 초과 사유', '입력자', '청구 No', '장부 ID'], NFVISITS.map(x => [x.id, x.date, A(x.targets), A(x.with), N(x.youth), N(x.why), x.people, x.amt, x.pay, N(x.over), x.by, N(x.claim), N(x.ledger)]));
   tab(F2, '돌봄', '노랑', '다락방', '돌봄 대상과 연락 기록', ['교적부 ID', '이름', '까닭', '시작일', '마지막 연락', '다음 연락', '연락 기록(JSON)', '자동'], CARE.map(x => [mid(x.n), x.n, x.why, x.since, N(x.last), N(x.next), J(x.log), Y(x.auto)]));
-  tab(F2, '상태변경', '노랑', '다락방', '제안 → 확인 → 기록', ['No', '교적부 ID', '이름', '이후', '제안자', '제안일', '상태|대기,승인,반려', '근거(JSON)', '확인자'], APPROVALS.filter(a => a.who).map(a => [a.id, mid(a.who), a.who, a.to, a.owner, a.date, a.status, J(a.detail), N(a.ok)]));
+  tab(F2, '상태변경', '노랑', '다락방', '제안 → 확인 → 기록', ['No', '교적부 ID', '이름', '이후', '제안자', '제안일', '상태|대기,승인,반려,확인', '근거(JSON)', '확인자'], APPROVALS.filter(a => a.who).map(a => [a.id, mid(a.who), a.who, a.to, a.owner, a.date, a.status, J(a.detail), N(a.ok)]));
   tab(F2, '보관함', '노랑', '다락방', '장결 → 보관 → 파기(관리자). 전출 · 졸업은 1월 1일에 자동', ['이름', '있던 셀', '상태', '보관일', '보관자', '사유', '원래 줄(JSON)'], ARCHIVE.map(x => [x.n, x.cell, x.status, x.at, x.by, x.reason, J(x.m)]).concat(ARBACK120.map(x => [x.n, N(x.cell), '되살림', x.at, N(x.by), '', '{}'])));
   tab(F5, '심방일지', '노랑', '다락방', '별도 파일 — 지도목사 · 부장 · 회장 · 목양국장만, 심방 비밀번호를 한 번 더. 사실만 적음', ['No', '일자', '교적부 ID', '이름', '셀', '유형', '담당', '계기', '요약', '후속', '다음 연락', '상태|진행,종결', '비공개'], VISITS.map(v => [v.id, v.date, mid(v.m), v.m, v.cell, v.type, v.by, v.why, v.sum, N(v.follow), N(v.next), v.status, Y(v.secret)]));
 
@@ -8421,9 +8421,9 @@ const CODEC = {
   상시사역로그: {key:null, dec:R => ROUTLOG.splice(0, ROUTLOG.length, ...R.map(r => ({date:CV.s(r['일자']), what:CV.s(r['사역명']), dept:CV.s(r['담당국']), people:CV.n0(r['참석']), who:CV.a(r['참여자들']), spent:CV.n0(r['지출'])})))},
   조직: {key:['연도', 'ID'], local:true, dec:R => { R.filter(r => r['상태'] === '현' && r['사람']).forEach(r => { const id = CV.s(r['ID']), kind = CV.s(r['구분']), u = kind === '셀리더' ? USERS.find(x => x.role === '셀리더' && x.cell === id.replace(/ 셀리더$/, '')) : kind === '팀장' ? USERS.find(x => x.role === '팀장' && x.team === id) : kind === '관리자' ? null : USERS.find(x => x.role === id); if (!u) return; const nm = CV.s(r['사람']); if (u.real && u.real !== nm && ALIAS[u.real] && !ALIAS[nm]) ALIAS[nm] = ALIAS[u.real]; u.real = nm; u.name = nm; if (r['사용자 ID']) u.uid = CV.s(r['사용자 ID']); }); USERS.filter(u => u.role === '셀리더').forEach(u => { const l = LEADERS.find(x => x.group === u.cell); if (l) { if (l.real && l.real !== u.real && ALIAS[l.real] && !ALIAS[u.real]) ALIAS[u.real] = ALIAS[l.real]; l.real = u.real; l.name = u.real; } }); }},
   셀편성: {key:['셀 이름'], local:true, dec:R => { R.filter(r => r['상태'] !== '폐지').forEach(r => { const c = CV.s(r['셀 이름']); if (c && !CELLS[c]) CELLS[c] = []; }); }},
-  교적부: {key:['ID'], skip:['입력일'], dec:R => { const old = cvByMid(); Object.keys(CELLS).forEach(c => CELLS[c].splice(0)); POOL.splice(0);
-    R.forEach(r => { if (CV.s(r['상태']) === '보관') return; const id = CV.s(r['ID']), m = old[id] || memBlank({}); m.id = id; m.n = CV.s(r['이름']); [['bday', '생일'], ['sex', '성별'], ['phone', '연락처'], ['status', '상태'], ['statusAt', '상태 변경일'], ['reg', '등록일'], ['lead', '인도자'], ['addr', '주소'], ['job', '학교/직장'], ['note', '비고'], ['prevCell', '전년 셀'], ['prev', '전년 분류']].forEach(([k, c]) => cvSet(m, k, CV.os(r[c])));
-      mig120(m, r); if (r['진급 연도'] !== undefined) cvSet(m, 'promoY', CV.os(r['진급 연도'])); cvSet(m, 'vice', r['셀 역할'] === '부리더' || undefined); cvSet(m, 'star', CV.y(r['리더 후보']) || undefined); const c = CV.s(r['셀']); if (c && !CELLS[c]) CELLS[c] = []; (c ? CELLS[c] : POOL).push(m); }); }},
+  교적부: {key:['ID'], skip:['입력일'], dec:R => { const old = cvByMid(); Object.keys(CELLS).forEach(c => CELLS[c].splice(0)); POOL.splice(0); DROP124.splice(0);
+    R.forEach(r => { if (CV.s(r['상태']) === '보관' || drop124(r)) return; const id = CV.s(r['ID']), m = old[id] || memBlank({}); m.id = id; m.n = CV.s(r['이름']); [['bday', '생일'], ['sex', '성별'], ['phone', '연락처'], ['status', '상태'], ['statusAt', '상태 변경일'], ['reg', '등록일'], ['lead', '인도자'], ['addr', '주소'], ['job', '학교/직장'], ['note', '비고'], ['prevCell', '전년 셀'], ['prev', '전년 분류']].forEach(([k, c]) => cvSet(m, k, CV.os(r[c])));
+      mig120(m, r); cvSet(m, 'createdAt', CV.os(r['입력일'])); if (r['진급 연도'] !== undefined) cvSet(m, 'promoY', CV.os(r['진급 연도'])); cvSet(m, 'vice', r['셀 역할'] === '부리더' || undefined); cvSet(m, 'star', CV.y(r['리더 후보']) || undefined); const c = CV.s(r['셀']); if (c && !CELLS[c]) CELLS[c] = []; (c ? CELLS[c] : POOL).push(m); }); }},
   주간: {key:['주일', '교적부 ID'], skip:['입력자', '입력 시각', '이름', '셀'], dec:R => { const by = cvByMid(), lab = iso => mdS(iso); cvMem().forEach(([c, m]) => { m.hist = {}; });
     R.forEach(r => { const m = by[CV.s(r['교적부 ID'])]; if (!m) return; (m.hist = m.hist || {})[lab(CV.s(r['주일']))] = cvSet(cvSet({a:CV.n0(r['예배']), c:CV.n0(r['셀모임']), w:CV.n0(r['말씀(일)']), q:CV.n0(r['큐티(일)']), e:CV.n0(r['전도'])}, 'by', CV.o(r['입력자'])), 'at', CV.o(r['입력 시각'])); });
     const NW = NEXTW(); if (WEEKS.length > WBASE()) WEEKS.splice(WBASE()); if (cvMem().some(([c, m]) => m.hist && m.hist[NW])) WEEKS.push(NW);
@@ -9855,6 +9855,69 @@ CHANGELOG.unshift(['2026-11-27', '', '목양 — 결재받은 예배일지는 �
   '교적부 명단 위에 "외부 제출용 명단"을 넣었습니다 — 군부대 출입처럼 외부 기관에 낼 때 이름을 붙여 넣거나 고르면 이름 · 생년월일 · 성별 · 주소 표를 엑셀이나 복사로 받습니다. 작업 기록에는 사람 수만 남습니다(사역 운영 규정 8.3 ⑥)',
   '셀리더 알림: 새로 파송된 사람이 결석하면 알림이 한 줄로 합쳐지고 함께하는 새가족팀원이 적힙니다. 셀리더모임 자료의 "우선 연락"에 담당이 적힙니다(목양 규정 5.2 ②)',
   '12월에 뜨던 "연말 장결 검토" 할 일은 없앴습니다 — 6월 · 12월 "재적 제외 협의"가 맡습니다']]);
+
+/* ==================== v124 — 목양 ⑤: 잘못 넣은 사람의 취소 · 본인 요청 자료 삭제 (규정 v0.3 목양 9장 ⑥ · 10장 ⑥) · 서버 2026-11-27e ==================== */
+const SRV27E = '2026-11-27e';
+const DROP124 = [];   // 교적부에서 뺀 사람 {id, kind:'취소'|'지움', at} — 시트에는 번호만 남은 줄(관리자가 파기). 해마다 따로(P._v124)
+const DROPK124 = ['취소', '지움'];
+{ const _pk124 = yearPackAll; yearPackAll = function(){ const P = _pk124.apply(this, arguments); P._v124 = JSON.parse(JSON.stringify({drop:DROP124})); return P; }; }
+{ const _ld124 = yearLoadAll; yearLoadAll = function(P){ const r = _ld124.apply(this, arguments); DROP124.splice(0, DROP124.length, ...(((P && P._v124) || {}).drop || [])); return r; }; }
+function dropOn124(){ return !on114() || srvAtLeast(SRV27E); }   // 옛 서버(27d 이하)는 상태 값 '취소' · '지움'을 받지 않음
+function drop124(r){ const k = CV.s(r['상태']); if (!DROPK124.includes(k)) return false; const id = CV.s(r['ID']); if (id && !DROP124.some(x => x.id === id)) DROP124.push({id, kind:k, at:CV.s(r['상태 변경일'])}); return true; }   // 교적부를 읽을 때 — 번호만 남은 줄은 명단에 넣지 않음
+function dropRows124(){ if (!dropOn124()) return []; const n = 18 + (srvAtLeast(SRV27B) ? 3 : 0) + (srvAtLeast(SRV27C) ? 1 : 0);   // 교적부 칸 수(그 판의 칸과 같게)
+  return DROP124.filter(x => x.id).map(x => { const r = Array(n).fill(''); r[0] = x.id; r[1] = `(${x.kind})`; r[7] = x.kind; r[8] = x.at || ''; return r; }); }
+function memFind124(cell, i){ return (CELLS[cell] || [])[i]; }
+function memDrop124(m, kind){ if (!m) return false; const id = m.id || (typeof mid === 'function' ? mid(m.n) : '') || '';
+  Object.keys(CELLS).forEach(c => { const i = CELLS[c].indexOf(m); if (i >= 0) CELLS[c].splice(i, 1); }); const j = POOL.indexOf(m); if (j >= 0) POOL.splice(j, 1);
+  if (kind === '지움') {   // 본인 자료 — 돌봄 · 기도제목 · 새가족 명부에서도 뺌(시트 쪽은 서버가 이름 · 글을 비우고, 줄은 관리자가 파기)
+    [CARE, PRAY].forEach(L => { for (let i = L.length - 1; i >= 0; i--) if (L[i] && L[i].n === m.n) L.splice(i, 1); });
+    for (let i = NEWFAM.length - 1; i >= 0; i--) if (NEWFAM[i].n === m.n) { if (NEWFAM[i].id && typeof NFGONE119 !== 'undefined') NFGONE119.push({id:NEWFAM[i].id, kind:NEWFAM[i].kind || ''}); NEWFAM.splice(i, 1); } }
+  if (id && !DROP124.some(x => x.id === id)) DROP124.push({id, kind, at:TODAYISO});
+  log('우리 셀', kind === '취소' ? '입력 취소' : '자료 삭제', kind === '취소' ? '잘못 넣은 사람 — 교적부 번호만 남김' : '본인 요청 — 교적부 번호만 남김');   // 이름은 적지 않음
+  srvKick111(); return true; }
+/* 수정 창 아래 — 넣은 날이면 '입력 취소', 아니면 '취소 제안' · 본인 '자료 삭제 접수' (목양국장만 — 수정 창이 목양국장만) */
+function dropBox124(cell, i){ const m = memFind124(cell, i); if (!m || S.role !== '목양국장' || S.arch) return ''; const P = EX.approvals.filter(a => a.who === m.n && DROPK124.includes(a.to) && a.status === '대기');
+  const btn = (k, t) => P.some(a => a.to === k) ? `<span class="pill warn" style="font-size:10.5px">${k === '취소' ? '취소 제안 올림' : '삭제 요청 접수됨'} — 지도목사 확인 기다림</span>` : `<button type="button" class="btn s ghost" id="drop_${k}124" onclick="dropAsk124('${cell}',${i},'${k}')">${t}</button>`;
+  return `<details class="note" id="dropbox124" style="margin-top:10px;font-size:12px"${P.length ? ' open' : ''}><summary style="cursor:pointer">잘못 넣음 · 본인 자료 삭제 요청</summary><div style="display:grid;gap:6px;margin-top:6px">
+    ${m.createdAt === TODAYISO ? '' : `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${btn('취소', '잘못 넣은 사람 — 취소 제안')}<span>넣은 날이 지나면 지도목사 확인을 받아 취소합니다(목양 규정 9장 ⑥)</span></div>`}
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${btn('지움', '본인 요청 — 자료 삭제 접수')}<span>지도목사 확인 뒤 2주 안에 지우고 본인에게 알립니다. 시트의 줄은 관리자가 파기합니다(목양 규정 10장 ⑥)</span></div></div></details>`; }
+function dropNow124(cell, i){ const m = memFind124(cell, i); if (!m || S.role !== '목양국장' || m.createdAt !== TODAYISO) return; if (on114() && !dropOn124()) { toast('서버를 2026-11-27e 이상으로 올린 뒤에 취소할 수 있습니다'); return; }
+  memDrop124(m, '취소'); closeModal(); render(); toast('입력을 취소했습니다 — 오늘 넣은 사람이라 바로 뺐습니다'); }
+function dropAsk124(cell, i, kind){ const m = memFind124(cell, i); if (!m || S.role !== '목양국장') return; if (on114() && !dropOn124()) { toast('서버를 2026-11-27e 이상으로 올린 뒤에 씁니다'); return; }
+  const due = shift(TODAYISO, 14), id = Math.max(0, ...EX.approvals.map(a => a.id)) + 1;
+  EX.approvals.push({id, name:kind === '취소' ? `${m.n} — 잘못 넣은 사람 취소 제안` : `${m.n} — 본인 자료 삭제 요청 (${mdS(due)}까지)`, type:'상태 변경', owner:'목양국장', date:mdS(TODAYISO) + (kind === '취소' ? ' 제안' : ' 접수'), status:'대기', to:kind, who:m.n,
+    detail:kind === '취소' ? {why:'잘못 넣은 사람 — 넣은 날이 지나 지도목사 확인 뒤 취소', rule:'목양 규정 9장 ⑥ — 교적부 줄은 번호만 남기고 관리자가 파기'} : {req:TODAYISO, due, why:`본인 요청 — ${mdS(TODAYISO)} 접수 · ${mdS(due)}까지 삭제하고 본인에게 알림`, rule:'목양 규정 10장 ⑥ — 지도목사 확인 뒤 목양국장이 삭제 · 파기는 관리자 · 삭제 후 통계는 다시 계산하지 않음'}});
+  log('우리 셀', kind === '취소' ? '취소 제안' : '자료 삭제 요청 접수', kind === '취소' ? '잘못 넣은 사람' : `${mdS(due)}까지`); closeModal(); render();
+  toast(kind === '취소' ? '취소 제안을 올렸습니다 — 지도목사 확인 뒤 "확인받음 → 기록"' : `자료 삭제 요청을 접수했습니다 — 지도목사 확인 뒤 ${mdS(due)}까지 삭제`); }
+{ const _cs124 = confirmStatus; confirmStatus = function(id){ const a = EX.approvals.find(x => x.id === id); if (!a || !DROPK124.includes(a.to)) return _cs124.apply(this, arguments);
+    if (S.role !== '목양국장') return; const m = Object.values(CELLS).flat().find(x => x.n === a.who) || POOL.find(x => x.n === a.who);
+    memDrop124(m, a.to); a.status = '확인'; a.date += ` · ${mdS(TODAYISO)} 기록`;
+    if (a.to === '지움') TASKS.push({id:Math.max(0, ...TASKS.map(x => x.id)) + 1, title:'자료 삭제 — 본인에게 알림 (목양 규정 10장 ⑥)', ev:'자료 삭제 요청', owner:'목양국장', by:'목양국장', due:TODAYISO, status:'예정'});   // 이름 없이 — 접수한 목양국장이 앎
+    closeModal(); render(); toast(a.to === '지움' ? '삭제했습니다 — 본인에게 알려 주세요. 시트의 줄은 관리자가 파기합니다' : '취소했습니다 — 교적부에는 번호만 남습니다'); }; }
+/* 요약 창 — 취소 · 삭제 요청에는 출석 · 결석 · 심방 줄이 맞지 않으므로 빼고, 기록할 때 무엇이 되는지 적음 */
+{ const _os124 = openSummary; openSummary = function(id){ const r = _os124.apply(this, arguments);
+    try { const a = EX.approvals.find(x => x.id === id), md = document.querySelector('.modal'); if (a && DROPK124.includes(a.to) && md) {
+        [...md.querySelectorAll('.docbody dl dt')].filter(dt => ['출석', '결석', '마지막 심방'].includes(dt.textContent.trim())).forEach(dt => { const dd = dt.nextElementSibling; dt.remove(); if (dd && dd.tagName === 'DD') dd.remove(); });
+        const bt = [...md.querySelectorAll('button')].find(x => /확인받음 → 기록/.test(x.textContent)); if (bt && bt.nextElementSibling) bt.nextElementSibling.textContent = a.to === '지움' ? '지도목사 확인(통화)을 받았으면 누릅니다 — 명단 · 기도제목 · 돌봄에서 빼고 교적부에는 번호만 남깁니다. 본인에게 알림 할 일이 생깁니다' : '지도목사 확인(통화)을 받았으면 누릅니다 — 명단에서 빼고 교적부에는 번호만 남깁니다';
+        const ps = [...md.querySelectorAll('.cont > p.note')], last = ps[ps.length - 1]; if (last && /후속 할 일/.test(last.textContent)) last.textContent = '확인은 통화 · 카톡으로. 시트의 줄은 관리자가 파기합니다 (목양 규정 9장 ⑥ · 10장 ⑥).'; } } catch (e) { console.error('요약 창', e); }
+    return r; }; }
+/* 다시 읽을 때 — 서버가 이름 · 글을 비운 줄은 보이지 않게 */
+{ const d0 = CODEC.기도제목.dec; CODEC.기도제목.dec = R => { const r = d0(R); for (let i = PRAY.length - 1; i >= 0; i--) if (!PRAY[i].n && !PRAY[i].text) PRAY.splice(i, 1); return r; }; }
+{ const d0 = CODEC.돌봄.dec; CODEC.돌봄.dec = R => { const r = d0(R); for (let i = CARE.length - 1; i >= 0; i--) if (!CARE[i].n) CARE.splice(i, 1); return r; }; }
+{ const d0 = CODEC.상태변경.dec; CODEC.상태변경.dec = R => { const r = d0(R); EX.approvals.forEach(a => { if (a.who && (a.to === '재적 제외' || (!a.to && a.detail && 'calls' in a.detail))) { a.type = '재적 정리'; if (!a.name || a.name === `${a.who} — ${a.to}`) a.name = `${a.who} 재적 제외 — 6개월 이상 결석`; }   // 재적 제외 요청 — 시트에 종류 칸이 없어 '이후'로 알아봄(전에는 다시 읽으면 '상태 변경'이 되어 '확인받음 → 기록'이 상태를 바꿔 버렸음)
+    if (a.type === '상태 변경' && !a.who && DROPK124.includes(a.to)) { a.who = `(${a.to})`; a.name = a.to === '지움' ? '본인 자료 삭제 요청 — 처리함' : '잘못 넣은 사람 취소 — 처리함'; } }); return r; }; }
+/* 할 일 — 목양국장: 삭제 요청은 2주 안 */
+{ const _in124 = inbox; inbox = function(){ const it = _in124.apply(this, arguments); try { if (S.role === '목양국장') EX.approvals.filter(a => a.type === '상태 변경' && a.to === '지움' && a.status === '대기').forEach(a => { const due = (a.detail || {}).due || '';
+      it.push({id:'del' + a.id, pri:0.8, due:due || TODAYISO, tag:['due', '교적부'], title:`자료 삭제 요청 — ${due ? mdS(due) + '까지' : '2주 안'}`, meta:'지도목사 확인(통화) 뒤 "확인받음 → 기록"으로 삭제하고 본인에게 알립니다 (목양 규정 10장 ⑥)', act:`<button class="btn s" onclick="openSummary(${a.id})">열기</button>`}); }); } catch (e) { console.error('삭제 요청 알림', e); } return it; }; }
+/* 관리자 — 파기할 줄(번호만 남은 교적부 줄) */
+function dropCard124(){ if (!DROP124.length) return ''; return `<div class="callout" id="drop124" style="margin:0 0 12px;border-left-color:var(--warn);background:var(--warn-bg)"><b>파기할 줄 ${DROP124.length}</b> — 잘못 넣어 취소했거나 본인 요청으로 지운 사람입니다. 원본 시트(공용 계정)에서 이 번호의 줄을 지워 주세요: 목양 마스터의 교적부 · 주간 · 기도제목 · 돌봄 · 상태변경, 심방일지 파일, 백업(목양 규정 9장 ⑥ · 10장 ⑥).<div class="names" style="margin-top:6px">${DROP124.map(x => `<span class="pill grey">${esc(x.id)} · ${x.kind}${x.at ? ' · ' + mdS(x.at) : ''}</span>`).join('')}</div></div>`; }
+{ const _va124 = V.admin; V.admin = function(){ return dropCard124() + _va124.apply(this, arguments); }; }
+
+CHANGELOG.unshift(['2026-11-27', '', '목양 — 잘못 넣은 사람의 취소 · 본인 요청 자료 삭제', [
+  '교적부 수정 창 아래 "잘못 넣음 · 본인 자료 삭제 요청"(목양국장): 넣은 날에는 "입력 취소"로 바로 빼고, 그 뒤에는 "취소 제안"을 올려 지도목사 확인을 받은 뒤 "확인받음 → 기록"으로 뺍니다(목양 규정 9장 ⑥)',
+  '본인이 자료 삭제를 요청하면 "자료 삭제 접수" → 지도목사 확인 → 2주 안에 "확인받음 → 기록"으로 지우고 본인에게 알립니다. 접수한 날부터 2주 기한이 할 일에 뜹니다(목양 규정 10장 ⑥)',
+  '취소 · 삭제한 사람은 명단 · 돌봄 · 기도제목에서 빠지고, 교적부에는 번호만 남습니다. 주간 · 기도제목 · 돌봄의 이름과 글도 비웁니다. 줄은 관리자가 원본 시트에서 파기합니다(관리 화면에 "파기할 줄")',
+  '서버가 넣은 날(입력일)을 기억하므로 다시 들어와도 오늘 넣은 사람의 "입력 취소"가 보입니다']]);
 
 autoBdayNotice();
 render();
