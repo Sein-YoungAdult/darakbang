@@ -8321,7 +8321,7 @@ function sheetTabs(lite){
 
   // ================= 목양 마스터
   tab(F2, '교적부', '노랑', '다락방', '한 사람 한 줄. 셀이 비면 미배정(셀 편성판 아래 칸). 줄을 지우지 않고 보관함으로', ['ID', '이름', '생일', '성별|남,여', '연락처', '셀', '셀 역할', '상태|출석,진급,특별관리,전출,졸업,보관', '상태 변경일', '등록일', '입력일', '인도자', '주소', '학교/직장', '비고', '전년 셀', '전년 분류|핵심,안정,관심,돌봄 필요,장결자', '리더 후보', ...(srvAtLeast(SRV27B) ? ['마지막 출석', '특별관리 사유', '돌아오는 때'] : [])],
-    mem.map(([c, m]) => [mid(m.n), m.n, N(m.bday), N(m.sex), N(m.phone), c, m.vice ? '부리더' : '', N(m.status), N(m.statusAt), N(m.reg), '', N(m.lead), N(m.addr), N(m.job), N(m.note), N(m.prevCell), N(m.prev), Y(m.star), ...(srvAtLeast(SRV27B) ? [N(m.absFrom), N(m.spWhy), N(m.spBack)] : [])]).concat(arRows120()));
+    mem.map(([c, m]) => [mid(m.n), m.n, N(m.bday), N(m.sex), N(m.phone), c, m.vice ? '부리더' : '', N(stOut120(m)), N(m.statusAt), N(m.reg), '', N(m.lead), N(m.addr), N(m.job), N(m.note), N(m.prevCell), N(prevOut120(m.prev)), Y(m.star), ...(srvAtLeast(SRV27B) ? [N(m.absFrom), N(m.spWhy), N(m.spBack)] : [])]).concat(arRows120()));
   tab(F2, '주간', '노랑', '다락방', '셀리더 주간 입력 — 주일마다 사람마다 한 줄. (예시 자료는 예배만 주별로 있고 말씀 · 큐티 · 전도는 합계뿐이라 비움)', ['주일', '셀', '교적부 ID', '이름', '예배', '셀모임', '말씀(일)', '큐티(일)', '전도', '입력자', '입력 시각'],
     mem.flatMap(([c, m]) => (m.hist && Object.keys(m.hist).length ? Object.entries(m.hist).map(([w, h]) => [wkISO(w), c, mid(m.n), m.n, N(h.a), N(h.c), N(h.w), N(h.q), N(h.e), N(h.by), N(h.at)]) : (m.att || []).map((v, i) => v === null || v === undefined ? null : [WEEKS[i], c, mid(m.n), m.n, v, '', '', '', '', '', '']).filter(Boolean))));
   tab(F2, '기도제목', '노랑', '다락방', '제목 하나가 한 줄 — 셀리더는 자기 셀만', ['No', '날짜', '셀', '교적부 ID', '이름', '제목', '입력자'], nid(PRAY).map((x, i) => [x.id, x.d, x.c, mid(x.n), x.n, x.text, '']));
@@ -9722,9 +9722,13 @@ const arKeep120 = m => { const o = {n:m.n, status:m.status}; ['id', 'phone', 'st
 function arPut120(a, tail){ const k = ARBACK120.findIndex(x => x.n === a.n && x.at === a.at); if (k >= 0) ARBACK120.splice(k, 1); if (tail) ARCHIVE.push(a); else ARCHIVE.unshift(a); }
 const arRows120 = () => sp120On() && on114() ? ARCHIVE.filter(a => a.m && a.m.id).map(a => [a.m.id, '(보관)', '', '', '', '', '', '보관', a.at, '', '', '', '', '', '', '', '', '', '', '', '']) : [];   // 서버 판: 보관한 사람의 교적부 줄을 번호만 남기고 덮어씀(이름 · 연락처는 보관함 탭에만) — 다시 불러와도 명단에 돌아오지 않고, 셀리더 등에게 이름이 보이지 않게
 function mig120(m, r){   // 옛 상태 '장결' · '복귀'와 옛 분류 이름을 새 기준으로 읽음(서버 upgrade가 시트도 고침)
-  if (m.status === '장결') { m.status = '출석'; if (!m.absFrom && m.statusAt) m.absFrom = m.statusAt; } else if (m.status === '복귀') m.status = '출석';
+  delete m.oldSt120; if (m.status === '장결') { m.oldSt120 = '장결'; m.status = '출석'; if (!m.absFrom && m.statusAt) m.absFrom = m.statusAt; } else if (m.status === '복귀') { m.oldSt120 = '복귀'; m.status = '출석'; }
   if (m.prev === '장결 위험') m.prev = '장결자';
   if (r['마지막 출석'] !== undefined) { cvSet(m, 'absFrom', CV.os(r['마지막 출석']) || m.absFrom || undefined); cvSet(m, 'spWhy', CV.os(r['특별관리 사유'])); cvSet(m, 'spBack', CV.os(r['돌아오는 때'])); } }
+
+/* 옛 서버(27a 이하)에 붙어 있는 동안에는 시트에 적힌 옛 값을 그대로 돌려보냄 — 그 줄의 다른 칸을 고칠 때 옛 서버가 새 값('장결자')을 거절하지 않게, 그리고 서버를 올릴 때 statusFix가 옮길 '장결'이 남아 있게 */
+const stOut120 = m => !sp120On() && m.oldSt120 && m.status === '출석' ? m.oldSt120 : m.status;
+const prevOut120 = v => v === '장결자' && !sp120On() ? '장결 위험' : v;
 
 /* 할 일 — 6월 · 12월의 재적 제외 협의(목양국장) */
 { const _in120 = inbox; inbox = function(){ const it = _in120.apply(this, arguments); try { const n = absOutN120(), mo = TODAY.getMonth() + 1;
