@@ -3229,9 +3229,9 @@ const CARE_RULE = {need:40, stable:75, dev:3, warn3:1, long6:4, serveMonths:6, a
 /* 사역 가능일 — 교적부 등록일(새가족 첫 방문일 · 진급일) + serveMonths. 등록일이 없는 사람(기존 교인)은 바로 가능 */
 const serveFrom = m => { if (!m.reg) return null; const d = pd(m.reg); d.setMonth(d.getMonth() + CARE_RULE.serveMonths); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const canServe = m => { const f = serveFrom(m); return !f || f <= TODAYISO; };
-const promoted = () => Object.entries(CELLS).flatMap(([c, ms]) => ms.filter(m => m.status === '진급').map(m => ({c, m})));
+const promoted = () => Object.entries(CELLS).flatMap(([c, ms]) => ms.filter(m => m.status === '진급' || isPromo121(m)).map(m => ({c, m})));   // v121: 올해 진급한 사람(상태는 1월 1일부터 '출석')
 /* 3월 1일 — 진급자 자동 전환. 목양국장 지금 할 것에 한 줄 */
-if (TODAY.getMonth() === 2) promoted().forEach(({m}) => { if ((m.statusAt || '') < `${TODAY.getFullYear()}-03-01`) { m.status = '출석'; m.statusAt = `${TODAY.getFullYear()}-03-01`; m.autoPromoted = true; } });   // 돌봄 분류 기준 (목양 규정 5장 초기값 = 기준 시트)
+/* v121: 진급 → 출석은 1월 1일부터(promoAuto121 — 맨 아래에서 돎) */   // 돌봄 분류 기준 (목양 규정 5장 초기값 = 기준 시트)
 /* 상태 변경 뒤 후속 할 일 세트 — 기준 시트 값. [할 일, 담당, 기한(일)]. 상태 변경은 목양국장 제안 → 1층 확인(통화) → 목양국장이 기록하는 순간 아래 할 일이 생김 */
 const STATUSES = ['출석','진급','특별관리','전출','졸업'];
 /* 보관함 — 교적부에서 빠진 사람. 삭제 버튼은 없고, 장결이 archiveMonths 지나면 '보관 제안' → 목양국장이 보관 → purgeMonths 지나면 관리자가 파기. 전출 · 졸업은 연말(1/1 전환) 때 자동 보관. 모두 복원 가능 */
@@ -3875,7 +3875,7 @@ function inbox98(){
   if (TODAY.getMonth() >= 10) { const hk = hoKeyOf(), hr = hk ? hoRec(hk) : null, hc = hk ? hoCount(hk) : null;   // v95 — 마감은 그해 12-31 · 자리마다(이 자리의 다락방 · 맡은 사역 · 서류)
     it.push({id:'handover', g:'month', pri:5, due:`${TODAY.getFullYear()}-12-31`, tag:['','인수'], title:tier() === 0 ? `인수인계 — 마친 자리 ${hoAllRecs().filter(r => r.at).length}` : hr && hr.at ? `인수인계 — ${mdS(hr.at)} 마침` : `인수인계 — ${hoTaking() ? '설명 들을 것' : '설명할 것'}${hc ? ' ' + hc[0] + ' / ' + hc[1] : ''}`, meta:'11/1 ~ 12/31에만 보임 · 현 · 차기 담당이 같이 열어 놓고 — 이 자리의 다락방 · 맡은 사역 · 서류', act:`<button class="btn s" onclick="handover()">열기</button>`}); }
   if (S.role === '목양국장') {
-    const ap = Object.values(CELLS).flat().filter(m => m.autoPromoted); if (ap.length) it.push({id:'autoprom', pri:1.2, due:TODAYISO, tag:['','진급'], title:`진급자 ${ap.length}명이 3/1에 '출석'으로 바뀌었습니다 — ${ap.map(m => m.n).join(' · ')}`, meta:'확인만 하면 됩니다. 사역 가능일은 진급일 + 6개월', act:`<button class="btn s" onclick="Object.values(CELLS).flat().forEach(m => delete m.autoPromoted);render()">확인</button>`});
+    const ap = Object.values(CELLS).flat().filter(m => m.autoPromoted); if (ap.length) it.push({id:'autoprom', pri:1.2, due:TODAYISO, tag:['','진급'], title:`진급자 ${ap.length}명이 1월 1일부터 '출석'입니다 — ${ap.map(m => m.n).join(' · ')}`, meta:'확인만 하면 됩니다. 사역 가능일은 진급일 + 6개월', act:`<button class="btn s" onclick="Object.values(CELLS).flat().forEach(m => delete m.autoPromoted);render()">확인</button>`});
     Object.entries(RESPHIST).filter(([, [a, b]]) => a < 70 && b < 70).forEach(([c, [a, b]]) => it.push({id:'resp' + c, pri:1.1, due:'2026-10-31', tag:['due','응답'], title:`${c} 응답률 2주 연속 70% 미만 (${a}% → ${b}%)`, meta:'셀리더모임에서 먼저 다룸 — 평가가 아니라 "어느 셀을 먼저 도울지" 신호 (목양 규정 4장)', act:`<button class="btn s" onclick="leaderMeeting()">모임 자료</button>`}));
     if ([4, 5, 6].includes(TODAY.getDay())) it.push({id:'fri-' + wkKey(), pri:1.3, due:TODAYISO, tag:['','금요일'], title:'집계 확인 → 우선 연락 · 심방 배정안 → 지도목사 먼저', meta:'답을 받은 뒤 토요 셀리더모임 자료로 (목양 규정 4장) · 자료는 자동으로 모아 둠', act:`<button class="btn s p" onclick="leaderMeeting()">자료 열기</button>`});
   }
@@ -5863,7 +5863,7 @@ V.newfam = () => {
       <td data-l="상태">${lost ? `<span class="pill bad">${Math.floor(-days(f.last) / 7)}주 연락 없음</span>` : w >= 12 ? '<span class="pill navy">판정 (출석 60%)</span>' : '<span class="pill ok">정상</span>'}</td>
       ${can ? `<td class="full"><span style="display:flex;gap:6px;flex-wrap:wrap">${f.stage === '교육' && f.edu.filter(Boolean).length === 4 ? (boss ? `<button class="btn s p" onclick="sendForm(${i})">파송</button>` : '<span class="pill navy">교육 수료 — 파송은 목양국장</span>') : f.stage === '교육' ? `<button class="btn s" onclick="NEWFAM[${i}].edu[NEWFAM[${i}].edu.indexOf(0)]=1;NEWFAM[${i}].last=TODAYISO;log('새가족','교육 +1',NEWFAM[${i}].n);render()">교육 +1</button>` : f.stage === '등록' ? `<button class="btn s" onclick="NEWFAM[${i}].stage='교육';NEWFAM[${i}].edu=[0,0,0,0];log('새가족','교육 시작',NEWFAM[${i}].n);render()">교육 시작</button>` : f.stage === '방문' ? `<button class="btn s p" onclick="NEWFAM[${i}].stage='등록';NEWFAM[${i}].reg=TODAYISO;log('새가족','등록',NEWFAM[${i}].n);render()">등록</button>` : ''}${f.stage !== '정착 관찰' ? `<button class="btn s ghost" onclick="newfamForm(${i})">수정</button>` : ''}</span></td>` : ''}</tr>`; }).join('')}</tbody></table></div>
   ${nfvCard()}
-  <div class="card sec"><div class="sechead"><h2 style="font-size:15px">고3 진급 새내기 ${P.length}</h2><span class="note">1~2월 '진급'으로 표시 · 3월 1일에 출석으로 자동 전환 · 사역국 참여는 진급일 + ${CARE_RULE.serveMonths}개월부터</span>${gate(boss, `<button class="btn s" style="margin-left:auto" onclick="memberPaste('진급')">+ 진급자 붙여넣기</button>`, '목양국장')}</div>
+  <div class="card sec"><div class="sechead"><h2 style="font-size:15px">고3 진급 새내기 ${P.length}</h2><span class="note">1월 1일부터 상태는 '출석' · 2월 말까지 새가족팀과 셀리더가 함께 돌봄 · 사역국 참여는 진급일 + ${CARE_RULE.serveMonths}개월부터</span>${gate(boss, `<button class="btn s" style="margin-left:auto" onclick="memberPaste('진급')">+ 진급자 붙여넣기</button>`, '목양국장')}</div>
     ${P.length ? `<div class="tblwrap"><table class="tbl mtbl"><thead><tr><th>이름</th><th>셀</th><th>진급일</th><th>사역 가능</th><th>8주 출석</th><th>기도제목</th></tr></thead><tbody>${P.map(({c, m}) => `<tr><td class="full"><b>${m.n}</b> <span class="pill coral" style="font-size:10px">진급</span></td><td data-l="셀">${cnS(c)}</td><td data-l="진급일">${m.reg ? mdS(m.reg) : '—'}</td><td data-l="사역 가능">${canServe(m) ? '<span class="pill ok" style="font-size:10px">가능</span>' : `${mdS(serveFrom(m))}부터`}</td><td data-l="출석">${pctOf(m)}%</td><td data-l="기도제목">${esc(m.pray || '—')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty" style="padding:12px">아직 없습니다 — 12월에 중고등부 명단을 받아 붙여넣습니다.</div>'}
     </div>
   `;
@@ -8320,8 +8320,8 @@ function sheetTabs(lite){
   tab(F1, '연간요약', '노랑', '다락방(1월)', '지난 해를 볼 때 이것만 읽음 — 1월에 전년 숫자를 확정해 한 줄', ['연도', '목양(JSON)', '사역(JSON)', '재정(JSON)', '확정일', ...(srvAtLeast(SRV26C) ? ['서술(JSON)'] : [])], srvAtLeast(SRV26C) ? anRows114() : []);
 
   // ================= 목양 마스터
-  tab(F2, '교적부', '노랑', '다락방', '한 사람 한 줄. 셀이 비면 미배정(셀 편성판 아래 칸). 줄을 지우지 않고 보관함으로', ['ID', '이름', '생일', '성별|남,여', '연락처', '셀', '셀 역할', '상태|출석,진급,특별관리,전출,졸업,보관', '상태 변경일', '등록일', '입력일', '인도자', '주소', '학교/직장', '비고', '전년 셀', '전년 분류|핵심,안정,관심,돌봄 필요,장결자', '리더 후보', ...(srvAtLeast(SRV27B) ? ['마지막 출석', '특별관리 사유', '돌아오는 때'] : [])],
-    mem.map(([c, m]) => [mid(m.n), m.n, N(m.bday), N(m.sex), N(m.phone), c, m.vice ? '부리더' : '', N(stOut120(m)), N(m.statusAt), N(m.reg), '', N(m.lead), N(m.addr), N(m.job), N(m.note), N(m.prevCell), N(prevOut120(m.prev)), Y(m.star), ...(srvAtLeast(SRV27B) ? [N(m.absFrom), N(m.spWhy), N(m.spBack)] : [])]).concat(arRows120()));
+  tab(F2, '교적부', '노랑', '다락방', '한 사람 한 줄. 셀이 비면 미배정(셀 편성판 아래 칸). 줄을 지우지 않고 보관함으로', ['ID', '이름', '생일', '성별|남,여', '연락처', '셀', '셀 역할', '상태|출석,진급,특별관리,전출,졸업,보관', '상태 변경일', '등록일', '입력일', '인도자', '주소', '학교/직장', '비고', '전년 셀', '전년 분류|핵심,안정,관심,돌봄 필요,장결자', '리더 후보', ...(srvAtLeast(SRV27B) ? ['마지막 출석', '특별관리 사유', '돌아오는 때'] : []), ...(srvAtLeast(SRV27C) ? ['진급 연도'] : [])],
+    mem.map(([c, m]) => [mid(m.n), m.n, N(m.bday), N(m.sex), N(m.phone), c, m.vice ? '부리더' : '', N(stOut120(m)), N(m.statusAt), N(m.reg), '', N(m.lead), N(m.addr), N(m.job), N(m.note), N(m.prevCell), N(prevOut120(m.prev)), Y(m.star), ...(srvAtLeast(SRV27B) ? [N(m.absFrom), N(m.spWhy), N(m.spBack)] : []), ...(srvAtLeast(SRV27C) ? [N(m.promoY)] : [])]).concat(arRows120().map(r => srvAtLeast(SRV27C) ? r.concat(['']) : r)));
   tab(F2, '주간', '노랑', '다락방', '셀리더 주간 입력 — 주일마다 사람마다 한 줄. (예시 자료는 예배만 주별로 있고 말씀 · 큐티 · 전도는 합계뿐이라 비움)', ['주일', '셀', '교적부 ID', '이름', '예배', '셀모임', '말씀(일)', '큐티(일)', '전도', '입력자', '입력 시각'],
     mem.flatMap(([c, m]) => (m.hist && Object.keys(m.hist).length ? Object.entries(m.hist).map(([w, h]) => [wkISO(w), c, mid(m.n), m.n, N(h.a), N(h.c), N(h.w), N(h.q), N(h.e), N(h.by), N(h.at)]) : (m.att || []).map((v, i) => v === null || v === undefined ? null : [WEEKS[i], c, mid(m.n), m.n, v, '', '', '', '', '', '']).filter(Boolean))));
   tab(F2, '기도제목', '노랑', '다락방', '제목 하나가 한 줄 — 셀리더는 자기 셀만', ['No', '날짜', '셀', '교적부 ID', '이름', '제목', '입력자'], nid(PRAY).map((x, i) => [x.id, x.d, x.c, mid(x.n), x.n, x.text, '']));
@@ -8421,7 +8421,7 @@ const CODEC = {
   셀편성: {key:['셀 이름'], local:true, dec:R => { R.filter(r => r['상태'] !== '폐지').forEach(r => { const c = CV.s(r['셀 이름']); if (c && !CELLS[c]) CELLS[c] = []; }); }},
   교적부: {key:['ID'], skip:['입력일'], dec:R => { const old = cvByMid(); Object.keys(CELLS).forEach(c => CELLS[c].splice(0)); POOL.splice(0);
     R.forEach(r => { if (CV.s(r['상태']) === '보관') return; const id = CV.s(r['ID']), m = old[id] || memBlank({}); m.id = id; m.n = CV.s(r['이름']); [['bday', '생일'], ['sex', '성별'], ['phone', '연락처'], ['status', '상태'], ['statusAt', '상태 변경일'], ['reg', '등록일'], ['lead', '인도자'], ['addr', '주소'], ['job', '학교/직장'], ['note', '비고'], ['prevCell', '전년 셀'], ['prev', '전년 분류']].forEach(([k, c]) => cvSet(m, k, CV.os(r[c])));
-      mig120(m, r); cvSet(m, 'vice', r['셀 역할'] === '부리더' || undefined); cvSet(m, 'star', CV.y(r['리더 후보']) || undefined); const c = CV.s(r['셀']); if (c && !CELLS[c]) CELLS[c] = []; (c ? CELLS[c] : POOL).push(m); }); }},
+      mig120(m, r); if (r['진급 연도'] !== undefined) cvSet(m, 'promoY', CV.os(r['진급 연도'])); cvSet(m, 'vice', r['셀 역할'] === '부리더' || undefined); cvSet(m, 'star', CV.y(r['리더 후보']) || undefined); const c = CV.s(r['셀']); if (c && !CELLS[c]) CELLS[c] = []; (c ? CELLS[c] : POOL).push(m); }); }},
   주간: {key:['주일', '교적부 ID'], skip:['입력자', '입력 시각', '이름', '셀'], dec:R => { const by = cvByMid(), lab = iso => mdS(iso); cvMem().forEach(([c, m]) => { m.hist = {}; });
     R.forEach(r => { const m = by[CV.s(r['교적부 ID'])]; if (!m) return; (m.hist = m.hist || {})[lab(CV.s(r['주일']))] = cvSet(cvSet({a:CV.n0(r['예배']), c:CV.n0(r['셀모임']), w:CV.n0(r['말씀(일)']), q:CV.n0(r['큐티(일)']), e:CV.n0(r['전도'])}, 'by', CV.o(r['입력자'])), 'at', CV.o(r['입력 시각'])); });
     const NW = NEXTW(); if (WEEKS.length > WBASE()) WEEKS.splice(WBASE()); if (cvMem().some(([c, m]) => m.hist && m.hist[NW])) WEEKS.push(NW);
@@ -9678,9 +9678,8 @@ const nfGoneRows119 = () => NFGONE119.map(x => [x.id, '(지움)', '', '', x.kind
 const careAutoOk119 = () => !on114() || S.role === '목양국장' || S.role === '회장' || isCareLead();
 
 /* ---------- ③ 고3 진급자 — 3월 1일에 '출석'(따로 확인받지 않음). 서버가 매일 새벽에 바꾸고, 3월에 목양국장이 들어오면 여기서도 ---------- */
-function promoAuto119(){ if (TODAY.getMonth() !== 2 || S.arch) return 0; if (on114() && !(srvLive() && S.role === '목양국장')) return 0; const cut = `${TODAY.getFullYear()}-03-01`; let n = 0;
-  promoted().forEach(({m}) => { if ((m.statusAt || '') < cut) { m.status = '출석'; m.statusAt = cut; m.autoPromoted = true; n++; } }); if (n) log('목양', '진급 → 출석', `${n}명 · 3월 1일 자동`); return n; }
-{ const _r119 = render; render = function(){ try { if (TODAY.getMonth() === 2 && on114()) promoAuto119(); } catch (e) { console.error('진급 전환', e); } return _r119.apply(this, arguments); }; }
+function promoAuto119(){ return promoAuto121(); }   // v121: 1월 1일부터
+{ const _r119 = render; render = function(){ try { promoAuto121(); } catch (e) { console.error('진급 전환', e); } return _r119.apply(this, arguments); }; }
 
 CHANGELOG.unshift(['2026-11-27', '', '목양 — 새가족 등록 확정일 · 진급 3월 1일', [
   '새가족 명부에 "등록 확정일": 방문 → 등록을 누른 날이 적히고, 수정 창에서 고칠 수 있습니다',
@@ -9707,7 +9706,7 @@ const gbCount120 = k => Object.values(CELLS).flat().filter(m => gubun120(m).k ==
 const absOutN120 = () => gbCount120('재적 제외 대상');
 const absTxt120 = m => { const g = gubun120(m); return g.w ? `연속 ${g.w}주 결석 (${g.k})` : '—'; };
 function back120(){ const R = CARE_RULE; return Object.values(CELLS).flat().filter(m => { let z = 0; for (const v of (m.att || [])) { if (v === 0) z++; else if (v === 1) { if (z >= R.long6) return true; z = 0; } } return false; }).length; }   // 다시 나온 수 — 장결(4주 이상) 뒤에 출석한 사람
-const gbPill120 = m => { const g = gubun120(m); return g.k === '결석자' ? ` <span class="pill warn gb120" style="font-size:10px">결석 ${g.w}주</span>` : g.k === '장결자' ? ` <span class="pill bad gb120" style="font-size:10px">장결자 ${g.w}주</span>` : g.k === '재적 제외 대상' ? ` <span class="pill bad gb120" style="font-size:10px">재적 제외 대상</span>` : g.k === '특별관리' ? `<small class="note gb120" style="display:block">${esc(m.spWhy || '')}${m.spBack ? ' · ' + esc(m.spBack) : ''}</small>` : ''; };
+const gbPill120 = m => { const g = gubun120(m); return g.k === '결석자' ? ` <span class="pill warn gb120" style="font-size:10px">결석 ${g.w}주</span>` : g.k === '장결자' ? ` <span class="pill bad gb120" style="font-size:10px">장결자 ${g.w}주</span>` : g.k === '재적 제외 대상' ? ` <span class="pill bad gb120" style="font-size:10px">재적 제외 대상</span>` : g.k === '출석자' && isPromo121(m) && TODAY.getMonth() <= 1 ? ` <span class="pill coral gb120" style="font-size:10px">진급 새내기</span>` : g.k === '특별관리' ? `<small class="note gb120" style="display:block">${esc(m.spWhy || '')}${m.spBack ? ' · ' + esc(m.spBack) : ''}</small>` : ''; };
 
 /* 특별관리 — 사유와 돌아오는 때(9장). 상태 변경 제안에 실려 가고, 지도목사 확인 뒤 기록할 때 교적부에 적힘 */
 const spBox120 = m => `<div id="me_spbox" style="display:${m.status === '특별관리' ? 'grid' : 'none'};gap:8px;grid-column:1/-1"><label>특별관리 사유 <select id="me_sw">${SPWHY120.map(x => `<option ${String(m.spWhy || '').startsWith(x) ? 'selected' : ''}>${x}</option>`).join('')}</select></label><label>자세히 · 돌아오는 때 <input id="me_sb" value="${esc(m.spBack || '')}" placeholder="예: 2028-05 전역 · 방학마다 옴"></label><small class="note">결석으로 세지 않고 셀에 남깁니다. 지도목사 확인 뒤 기록합니다(목양 규정 5.1 · 9장).</small></div>`;
@@ -9742,6 +9741,21 @@ CHANGELOG.unshift(['2026-11-27', '', '목양 — 결석자 · 장결자 구분�
   '"연말 장결 검토"가 "재적 제외 협의"(6월 · 12월)로 바뀌었습니다 — 6개월 넘게 결석한 사람만 올라옵니다',
   '보관함으로 옮길 때 주소 · 학교/직장 · 비고 · 생일을 지우고 이름 · 있던 셀 · 상태 · 날짜 · 연락처만 남깁니다. 파기는 보관 3년 뒤입니다',
   '셀 편성판 · 전체 표의 분류 "장결 위험"(6주)은 "장결자"(4주)로 바뀌었습니다. 연속 3주 결석으로 "관심"이 되던 것은 없앴습니다(출석률로만)']]);
+
+/* v121 — 고3 진급자는 그해 1월 1일부터 '출석'(회장 11-27 03:04 — v119의 3월 1일에서 바꿈)   같이: patch121.py · 서버 2026-11-27c
+   '진급'은 1월 1일 전에 미리 올려 둔 사람(진급 예정)의 표시. 1월 1일이 지나면 '출석'으로 바뀌고(따로 확인받지 않음) 교적부의 '진급 연도'에 그해가 남아 새내기 명단 · 보고의 수는 그대로 */
+const SRV27C = '2026-11-27c';
+const promoYear121 = () => (S && S.year) || TODAY.getFullYear();
+function isPromo121(m){ return !!m && !!m.promoY && String(m.promoY) === String(promoYear121()); }
+function promoAuto121(){ if (S.arch) return 0; const Y = promoYear121(), cut = `${Y}-01-01`; if (TODAYISO < cut) return 0; if (on114() && !(srvLive() && S.role === '목양국장')) return 0; let n = 0;   // 서버 판: 교적부를 고칠 수 있는 목양국장 화면에서만(서버도 매일 새벽에 바꿈)
+  Object.values(CELLS).flat().forEach(m => { if (m && m.status === '진급') { m.status = '출석'; if ((m.statusAt || '') < cut) m.statusAt = cut; if (!m.promoY) m.promoY = String(Y); n++; } });
+  if (n) log('목양', '진급 → 출석', `${n}명 · 1월 1일부터`); return n; }
+try { promoAuto121(); } catch (e) { console.error('진급 전환', e); }
+
+CHANGELOG.unshift(['2026-11-27', '', '목양 — 고3 진급자는 1월 1일부터 "출석"', [
+  '고3 진급자는 그해 1월 1일부터 상태가 "출석"입니다(어제 넣은 3월 1일에서 바꿨습니다). "진급"은 12월에 미리 올려 둔 사람의 표시이고, 1월 1일이 되면 저절로 바뀝니다',
+  '상태가 바뀌어도 새가족 화면의 "고3 진급 새내기" 명단과 보고서의 진급 인원은 그대로 남습니다 — 교적부에 "진급 연도" 칸이 생겼습니다',
+  '2월 말까지는 전체 표에 "진급 새내기" 표시가 붙습니다(새가족팀과 셀리더가 함께 돌보는 기간)']]);
 
 autoBdayNotice();
 render();
