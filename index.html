@@ -8331,7 +8331,7 @@ function sheetTabs(lite){
   tab(F2, '새가족명부', '노랑', '다락방', '', ['No', '이름', '나이', '연락처', '구분|기신자,태신자', '인도자', '상태', '양육 담당', '첫 방문일', '단계', '주차', '교육(4)', '마지막 연락', '파송일', '셀', '주소', ...(srvAtLeast(SRV27A) ? ['등록 확정일'] : [])], nid119(NEWFAM).map((x, i) => [x.id, x.n, N(x.age), N(x.phone), x.kind, N(x.lead), N(x.job), N(x.care), x.since, x.stage, N(x.wk), A(x.edu), N(x.last), N(x.sent), N(x.cell), N(x.addr), ...(srvAtLeast(SRV27A) ? [N(x.reg)] : [])]).concat(nfGoneRows119()));
   tab(F2, '새가족심방', '노랑', '다락방', '새가족 심방 기록 — 장부에는 "새가족 심방 n명"만', ['No', '일자', '대상들', '동행자', '청년 동행', '동행 이유', '인원', '금액', '결제 수단', '단가 초과 사유', '입력자', '청구 No', '장부 ID'], NFVISITS.map(x => [x.id, x.date, A(x.targets), A(x.with), N(x.youth), N(x.why), x.people, x.amt, x.pay, N(x.over), x.by, N(x.claim), N(x.ledger)]));
   tab(F2, '돌봄', '노랑', '다락방', '돌봄 대상과 연락 기록. 빼면 상태 칸에 삭제(다시 올리면 되살림)', ['교적부 ID', '이름', '까닭', '시작일', '마지막 연락', '다음 연락', '연락 기록(JSON)', '자동', ...(srvAtLeast('2026-11-27h') ? ['상태|삭제'] : [])], CARE.map(x => [mid(x.n), x.n, x.why, x.since, N(x.last), N(x.next), J(x.log), Y(x.auto), ...(srvAtLeast('2026-11-27h') ? [''] : [])]));
-  tab(F2, '상태변경', '노랑', '다락방', '제안 → 확인 → 기록', ['No', '교적부 ID', '이름', '이후', '제안자', '제안일', '상태|대기,승인,반려,확인', '근거(JSON)', '확인자'], APPROVALS.filter(a => a.who).map(a => [a.id, mid(a.who), a.who, a.to, a.owner, a.date, a.status, J(a.detail), N(a.ok)]));
+  tab(F2, '상태변경', '노랑', '다락방', '제안 → 확인 → 기록', ['No', '교적부 ID', '이름', '이후', '제안자', '제안일', '상태|대기,승인,반려,확인', '근거(JSON)', '확인자'], APPROVALS.filter(a => a.who).map(a => [a.id, mid(a.who) || String((a.detail && a.detail.id) || ''), a.who, a.to, a.owner, a.date, a.status, J(a.detail), N(a.ok)]));
   tab(F2, '보관함', '노랑', '다락방', '장결 → 보관 → 파기(관리자). 전출 · 졸업은 1월 1일에 자동', ['이름', '있던 셀', '상태', '보관일', '보관자', '사유', '원래 줄(JSON)'], ARCHIVE.map(x => [x.n, x.cell, x.status, x.at, x.by, x.reason, J(x.m)]).concat(ARBACK120.map(x => [x.n, N(x.cell), '되살림', x.at, N(x.by), '', '{}'])));
   tab(F5, '심방일지', '노랑', '다락방', '별도 파일 — 지도목사 · 부장 · 회장 · 목양국장만, 심방 비밀번호를 한 번 더. 사실만 적음', ['No', '일자', '교적부 ID', '이름', '셀', '유형', '담당', '계기', '요약', '후속', '다음 연락', '상태|진행,종결', '비공개'], VISITS.map(v => [v.id, v.date, mid(v.m), v.m, v.cell, v.type, v.by, v.why, v.sum, N(v.follow), N(v.next), v.status, Y(v.secret)]));
 
@@ -10316,6 +10316,55 @@ CHANGELOG.unshift(['2026-11-27', '', '목양 — 주간 입력의 특별관리 �
   '장결자로 자동으로 올라온 돌봄 줄은 그 사람이 다시 나오면 연락 기록이 없을 때 저절로 빠지고, 기록이 있으면 "다시 나옴"으로 표시됩니다(목양국장이 빼기)',
   '돌봄에서 빼면 서버 시트에서도 빠집니다(시트에는 삭제 표시로 남고, 다시 올리면 되살아남) — 전에는 다시 불러오면 돌아왔습니다',
   '서버가 매일 새벽 교적부의 "마지막 출석"을 주간 입력에서 이어 적습니다 — 해가 바뀌어 교적부를 새 파일로 옮겨도 장결 · 재적 제외 셈이 이어집니다(서버 2026-11-27h)']]);
+
+/* ==================== v130 — 목양 ⑦: 보관함 — 보관한 사람의 자료 삭제 요청 · 보관 3년 뒤 파기를 시트에서 (규정 v0.3 목양 9장 ⑤ · 10장 ⑥) · 서버 2026-11-27i ==================== */
+const SRV27I = '2026-11-27i';   // 관리자 파기(교적부 보관 → 지움, 보관 3년 뒤) · 지울 때 보관함 · 심방일지의 이름 · 글도 · 관리자에게 보관 줄의 보관일
+const AR130 = [];   // 서버 판 교적부의 보관 줄 {id, at} — 관리자 화면의 '보관 3년 — 파기'(이름 없음)
+const purgeAt130 = at => /^\d{4}-\d\d-\d\d/.test(at || '') ? addMonths(String(at).slice(0, 10), CARE_RULE.purgeMonths) : '';
+{ const C = CODEC.교적부, d0 = C.dec; C.dec = R => { const r = d0(R); try { AR130.splice(0); R.forEach(x => { if (CV.s(x['상태']) === '보관' && CV.s(x['ID'])) AR130.push({id:CV.s(x['ID']), at:CV.s(x['보관일'] || x['상태 변경일']).slice(0, 10)}); }); } catch (e) { console.error('보관 줄 읽기', e); } return r; }; }   // 관리자는 '보관일'(서버 27i) · 목양국장은 상태 변경일
+/* 보관함 탭 — 서버가 지운 줄(상태 '지움')은 보이지 않게 */
+{ const C = CODEC.보관함, d0 = C.dec; C.dec = R => d0(R.filter(r => CV.s(r['상태']) !== '지움')); }
+
+/* ---------- ① 보관함에 있는 사람의 자료 삭제 요청 — 접수(목양국장) → 지도목사 확인 → 확인받음 → 기록(2주 안). 교적부 줄은 번호만 남고, 서버가 보관함 · 주간 · 기도제목 · 돌봄 · 상태변경 · 심방일지의 이름 · 글을 지움(파기는 관리자) ---------- */
+function arIdx130(n){ return ARCHIVE.findIndex(a => a.n === n); }
+function arAsk130(i){ const a = ARCHIVE[i]; if (!a || S.role !== '목양국장' || S.arch) { noPerm('목양국장'); return; }
+  if (on114() && !srvAtLeast(SRV27I)) { toast('서버를 2026-11-27i 이상으로 올린 뒤에 씁니다'); return; }
+  if (EX.approvals.some(x => x.who === a.n && x.to === '지움' && x.status === '대기')) { toast('이미 접수했습니다 — 지도목사 확인을 기다립니다'); return; }
+  modal(`<div class="head"><div><small>보관함 · 본인 요청 자료 삭제 · 목양국장</small><h3>${esc(a.n)} — 자료 삭제 접수</h3><small>본인이 요청하면 접수 → 지도목사 확인 → 2주 안에 지우고 본인에게 알립니다(목양 규정 10장 ⑥). 지우면 보관함의 이름 · 연락처와 심방 · 돌봄 · 기도제목의 이름 · 글이 지워지고, 교적부에는 번호만 남습니다. 시트의 줄과 백업은 관리자가 파기합니다.</small></div><button class="x" onclick="closeModal()">×</button></div>
+  <div class="cont" style="display:flex;gap:8px"><button class="btn p" id="arask130" onclick="arAskGo130(${i})">접수</button><button class="btn" onclick="closeModal()">취소</button></div>`); }
+function arAskGo130(i){ const a = ARCHIVE[i]; if (!a || S.role !== '목양국장') return; const due = shift(TODAYISO, 14), id = Math.max(0, ...EX.approvals.map(x => x.id)) + 1;
+  EX.approvals.push({id, name:`${a.n} — 본인 자료 삭제 요청 (${mdS(due)}까지) · 보관함`, type:'상태 변경', owner:'목양국장', date:mdS(TODAYISO) + ' 접수', status:'대기', to:'지움', who:a.n,
+    detail:{req:TODAYISO, due, why:`본인 요청 — ${mdS(TODAYISO)} 접수 · ${mdS(due)}까지 삭제하고 본인에게 알림 · 보관함에 있는 사람`, rule:'목양 규정 10장 ⑥ — 지도목사 확인 뒤 목양국장이 삭제 · 파기는 관리자 · 삭제 후 통계는 다시 계산하지 않음', ar:1, id:String((a.m && a.m.id) || '')}});
+  log('우리 셀', '자료 삭제 요청 접수', `보관함 · ${mdS(due)}까지`); closeModal(); render(); toast(`자료 삭제 요청을 접수했습니다 — 지도목사 확인 뒤 ${mdS(due)}까지 삭제`); }
+/* 확인받음 → 기록 — 보관함에 있는 사람이면 보관함에서 지우고 교적부 줄은 번호만(지움) */
+{ const _cs130 = confirmStatus; confirmStatus = function(id){ const a = EX.approvals.find(x => x.id === id), k = a && a.to === '지움' ? arIdx130(a.who) : -1;
+    if (!a || k < 0 || Object.values(CELLS).flat().some(x => x.n === a.who)) return _cs130.apply(this, arguments);
+    if (S.role !== '목양국장') return; const ar = ARCHIVE[k], mid0 = String((ar.m && ar.m.id) || (a.detail && a.detail.id) || '');
+    ARCHIVE.splice(k, 1); [CARE, PRAY].forEach(L => { for (let i = L.length - 1; i >= 0; i--) if (L[i] && L[i].n === a.who) L.splice(i, 1); });
+    if (mid0 && !DROP124.some(x => x.id === mid0)) DROP124.push({id:mid0, kind:'지움', at:TODAYISO});
+    a.status = '확인'; a.date += ` · ${mdS(TODAYISO)} 기록`;
+    TASKS.push({id:Math.max(0, ...TASKS.map(x => x.id)) + 1, title:'자료 삭제 — 본인에게 알림 (목양 규정 10장 ⑥)', ev:'자료 삭제 요청', owner:'목양국장', by:'목양국장', due:TODAYISO, status:'예정'});   // 이름 없이
+    log('우리 셀', '자료 삭제', '본인 요청 — 보관함 · 교적부 번호만 남김'); srvKick111(); closeModal(); render(); toast('삭제했습니다 — 본인에게 알려 주세요. 시트의 줄은 관리자가 파기합니다'); }; }
+{ const _av130 = archiveView; archiveView = function(){ let h = _av130.apply(this, arguments); try { if (S.role === '목양국장' && !S.arch && typeof h === 'string') ARCHIVE.forEach((a, i) => { const k = `<button class="btn s" onclick="restoreMember(${i})">복원</button>`; if (!h.includes(k)) return; const p = EX.approvals.some(x => x.who === a.n && x.to === '지움' && x.status === '대기');
+      h = h.replace(k, k + (p ? `<span class="pill warn" style="font-size:10.5px">삭제 요청 접수됨 — 지도목사 확인 기다림</span>` : `<button class="btn s ghost" id="arask${i}" onclick="arAsk130(${i})" title="본인이 자료 삭제를 요청했을 때 — 목양 규정 10장 ⑥">자료 삭제 접수</button>`)); }); } catch (x) { console.error('보관함 — 삭제 요청', x); } return h; }; }
+
+/* ---------- ② 보관 3년 뒤 파기 — 서버 판 관리자: 교적부의 보관 줄(번호 · 보관일만)에서 3년이 지난 줄을 파기(→ 지움: 서버가 이름 · 글을 지움). 남은 줄 · 백업은 '파기할 줄'대로 시트에서 ---------- */
+function purgeCard130(){ if (S.role !== '마스터' || !on114() || yearMode() !== 'empty') return ''; const due = AR130.filter(a => purgeAt130(a.at) && purgeAt130(a.at) <= TODAYISO), wait = AR130.filter(a => !due.includes(a)), nx = wait.map(a => purgeAt130(a.at)).filter(Boolean).sort()[0];
+  return `<div class="card" id="purge130" style="margin:0 0 12px"><div class="sechead"><h2 style="font-size:15px">보관 3년 — 파기</h2><span class="pill ${due.length ? 'warn' : 'grey'}">${due.length}</span></div><p class="note" style="margin:0 0 8px">보관함으로 옮긴 뒤 ${CARE_RULE.purgeMonths}개월이 지난 사람의 정보를 파기합니다(목양 규정 9장 ⑤). 파기하면 서버가 교적부 · 주간 · 기도제목 · 돌봄 · 상태변경 · 보관함 · 심방일지에서 이름과 글을 지우고, 교적부에는 번호만 남깁니다. 남은 줄과 백업은 위 '파기할 줄'대로 시트에서 지웁니다. 이름은 보이지 않습니다.</p>
+    ${due.length ? `<div style="display:grid;gap:6px">${due.map(a => `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="pill grey">${esc(a.id)} · 보관 ${esc(a.at)}</span><button class="btn s" id="pg130_${esc(a.id)}" onclick="purge130('${esc(a.id)}')">파기</button></div>`).join('')}</div>` : '<span class="note">지금 파기할 줄은 없습니다.</span>'}${wait.length ? `<small class="note" style="display:block;margin-top:6px">기다리는 보관 줄 ${wait.length}${nx ? ` — 가장 빠른 파기 ${nx}` : ''}</small>` : ''}</div>`; }
+function purge130(id){ const a = AR130.find(x => x.id === id); if (!a || S.role !== '마스터') return; if (!srvAtLeast(SRV27I)) { toast('서버를 2026-11-27i 이상으로 올린 뒤에 됩니다'); return; }
+  modal(`<div class="head"><div><small>교적부 · 보관 3년 파기 · 관리자</small><h3>${esc(a.id)} — 영구 파기 <small class="note">보관 ${esc(a.at)}</small></h3><small>되돌릴 수 없습니다. 서버가 이 번호의 이름 · 연락처 · 글을 모든 탭에서 지우고 교적부에는 번호만 남깁니다. 작업 기록에는 '파기'만 남습니다(이름 없이).</small></div><button class="x" onclick="closeModal()">×</button></div>
+  <div class="cont" style="display:flex;gap:8px"><button class="btn p" id="pg130go" style="background:var(--bad);border-color:var(--bad)" onclick="purgeGo130('${esc(id)}')">파기</button><button class="btn" onclick="closeModal()">취소</button></div>`); }
+async function purgeGo130(id){ const btn = document.getElementById('pg130go'); if (SRV.busy || srvPending()) { toast('저장하는 중입니다 — 잠시 뒤 다시 눌러 주세요'); srvSync(); return; }
+  if (btn) { btn.disabled = true; btn.textContent = '파기하는 중…'; } const j = await api('write', {tab:'교적부', op:'update', rows:[{ID:id, 상태:'지움'}]});
+  if (!j || !j.ok) { toast((j && j.error) || '파기하지 못했습니다'); if (btn) { btn.disabled = false; btn.textContent = '파기'; } return; }
+  log('관리', '교적부 파기', '보관 3년 — 번호만 남김'); closeModal(); toast('파기했습니다 — 남은 줄과 백업은 "파기할 줄"대로 시트에서 지워 주세요'); try { await srvLoad(); } catch (e) {} render(); }
+{ const _va130 = V.admin; V.admin = function(){ const h = _va130.apply(this, arguments); try { const c = purgeCard130(); if (c && typeof h === 'string') return c + h; } catch (x) { console.error('보관 3년 파기', x); } return h; }; }
+
+CHANGELOG.unshift(['2026-11-27', '', '목양 — 보관함의 자료 삭제 요청 · 3년 뒤 파기', [
+  '보관함에 있는 사람도 본인이 요청하면 "자료 삭제 접수"(목양국장) → 지도목사 확인 → "확인받음 → 기록"으로 지웁니다 — 보관함 · 교적부에서 빠지고 번호만 남습니다(목양 규정 10장 ⑥)',
+  '서버 판 관리자 화면에 "보관 3년 — 파기": 보관한 지 3년이 지난 줄(번호 · 보관일만 보임)을 파기하면 서버가 모든 탭에서 이름 · 글을 지우고 교적부에는 번호만 남깁니다(9장 ⑤). 남은 줄과 백업은 "파기할 줄"대로',
+  '지우거나 파기할 때 서버가 보관함의 이름 · 연락처와 심방일지의 이름 · 계기 · 요약 · 후속도 지웁니다(서버 2026-11-27i)']]);
 
 autoBdayNotice();
 render();
