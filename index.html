@@ -8293,7 +8293,7 @@ function sheetTabs(lite){
     ((SCHED[yr] || []).map(s => ['일정', s[0], s[1], s[2], s[3], s[4], s[5], N(s[6]), N(s[7]), '']))
       .concat(DEADLINES.map(d => ['마감', d.due, '', '청년부', d.t, '', '', '', N(d.ev), d.who]), CHURCH.map(d => ['교회 일정', d.d, '', '교회', d.t, '', '', '', '', '']), MEET.map(d => ['모임', d.d, '', '청년부', d.t, '', '', '', '', ''])));
   tab(F1, '문서', '노랑', '다락방', '다락방 폼으로 쓴 문서 한 줄(칸 내용은 JSON 한 칸)', ['No', '종류', '제목', '사역', '날짜', '작성(직책)', '상태', '칸 내용(JSON)', 'PDF 경로', '고친 기록(JSON)'], DOCREC.map(d => [d.id, d.kind + (d.f && d.f.mt ? ' · ' + d.f.mt : ''), d.title, N(d.ev), d.date, d.by, N(d.status), J(d.f), N(d.pdf), J(d.edits)]));
-  tab(F1, '조사', '노랑', '다락방', '참석 · 차량 · 날짜 조사와 응답', ['No', '제목', '종류', '대상', '사역 No', '마감', '만든 직책', '선택지', '응답(JSON)', '신청 페이지', '닫힘'], SURVEYS.map(s => [s.id, s.title, s.kind + (s.car ? ' · 차량' : ''), s.audience, N(s.ev), s.deadline, s.by, A(s.options), J(s.resp), N(s.page), Y(s.closed)]));
+  tab(F1, '조사', '노랑', '다락방', '참석 · 차량 · 날짜 조사와 응답', ['No', '제목', '종류', '대상', '사역 No', '마감', '만든 직책', '선택지', '응답(JSON)', '신청 페이지', '닫힘', ...(srvAtLeast('2026-11-27g') ? ['수집 목적', '제출처'] : [])], SURVEYS.map(s => [s.id, s.title, s.kind + (s.car ? ' · 차량' : ''), s.audience, N(s.ev), s.deadline, s.by, A(s.options), J(s.resp), N(s.page), Y(s.closed), ...(srvAtLeast('2026-11-27g') ? [N(s.pu), N(s.ex)] : [])]));
   tab(F1, '승인', '노랑', '다락방', '기획안 · 문서 고침 승인. 상태 변경(사람)은 목양마스터의 상태변경 탭(번호는 이 탭과 나눠 씀)', ['No', '이름', '종류', '올린 직책', '날짜', '상태|대기,승인,반려,수정함', '문서 No', '사유', '확인자'], APPROVALS.filter(a => !a.who).map(a => [a.id, a.name, a.type, a.owner, a.date, a.status, N(a.doc), N(a.why), N(a.ok)]));   // v102 — 상태 변경(사람)은 상태변경 탭에만(번호는 같은 줄 번호를 나눠 씀)
   tab(F1, '인수인계', '노랑', '다락방', '자리마다 연말 인수인계 체크', ['연도', '자리', '체크한 줄(JSON)', '마친 날', '마친 사람', ...(srvAtLeast(SRV26C) ? ['넘긴 사람', '받은 사람', '전하는 말'] : [])], Object.entries(HANDED).filter(([k, v]) => v && (v.at || v.from || v.to || v.memo || Object.keys(v.done || {}).length)).map(([k, v]) => [yr, k, J(v.done || v), N(v.at), N(v.by), ...(srvAtLeast(SRV26C) ? [N(v.from), N(v.to), N(v.memo)] : [])]));
   tab(F1, '결재', '노랑', '다락방', '문서의 결재 도장 — 목사 · 부장이 다락방에서 찍음. 한 번 찍으면 고치지 않음', OKCOLS114, okRows114());
@@ -10220,6 +10220,57 @@ CHANGELOG.unshift(['2026-11-27', '', '사역 — 새 사역 등록의 열네 형
   '형태를 고르면 기본 준비 주수(+ 외부 장소 · 강사 2주 · 처음 2주 · 예배 3회 이상 1주, 3 ~ 12주 · 고3 맞이 2주)와 운영(나눠 맡음 · 주담당이 운영)이 정해지고, 체크리스트는 2027 사역 체크리스트와 같은 그 형태의 틀에서 만듭니다. 담당은 성격 → 직책(6.2)',
   '기획안을 쓰는 형태는 계획에 없던 사역의 등록 승인을 기획안 승인으로 갈음하고, 짧게 준비하는 사역은 끝난 뒤 "기록 없음"이 뜨지 않습니다(8.2 ④)',
   '다음 해 만들기 안내의 연도 폴더에서 2_를 뺌 — 목양 자료는 다락방에만(8.1)']]);
+
+/* ==================== v128 — 사역 ④: 조사의 수집 목적 · 보관 안내(사역 운영 규정 8.3 ① · ③) · 외부 기관 제출 알림(8.3 ⑥) · 서버 2026-11-27g ==================== */
+const SRV27G = '2026-11-27g';   // 조사 탭 끝에 '수집 목적' · '제출처'
+const PU128 = {참석:'참석 인원 확인 · 차량 배정', 투표:'날짜 정하기', 선택:'고른 것 모으기', 신청:'참가 신청 · 명단'};   // 적지 않으면 종류의 기본 목적
+const svPu128 = sv => (sv && sv.pu) || PU128[(sv || {}).kind] || '조사 결과 모으기';
+const svExAuto128 = t => /군선교|군위문|군부대|부대 출입/.test(t || '');   // 제목이 이러면 외부 제출을 켠 채로 제안
+const svExN128 = sv => Object.values((sv && sv.resp) || {}).filter(r => r && (sv.kind === '신청' || r.a === '참석')).length;
+/* 응답 창 · 조사 화면 맨 위 — 무엇에 쓰고 언제까지 두는지, 외부에 내는지 */
+function svNote128(sv, id, board){
+  return `<div class="callout svpu128" id="${id}" style="margin:${board ? '12px 0 0' : '0 0 4px'};font-size:12.5px;line-height:1.6"><b>수집 목적</b> ${esc(svPu128(sv))}<br><b>보관</b> 올해 12월 31일까지 — 그날 연락처 같은 개인 정보는 지우고 인원 · 비율만 남깁니다 <span class="note">(사역 운영 규정 8.3)</span>${sv.ex ? `<br><b style="color:var(--bad)">외부 제출</b> 참석으로 답하면 이름이 <b>${esc(sv.ex)}</b>에 제출됩니다. 생년월일 · 성별 · 주소는 따로 묻지 않고 담당 임원이 교적부에서 옮겨 적으며, 제출한 뒤 지웁니다.${board && extCan123() ? ` <button type="button" class="btn s" id="svext128" style="margin-left:4px" onclick="svExt128(${sv.id})">외부 제출용 명단 — 참석 ${svExN128(sv)}명</button>` : ''}` : ''}</div>`; }
+const exLine128 = sv => `※ 참석 명단은 ${sv.ex}에 제출됩니다 — 생년월일 · 성별 · 주소는 교적부에서 담당 임원이 옮겨 적습니다`;
+
+/* ---------- 조사 만들기 — 수집 목적 칸 · 보관 안내 · 외부 제출 ---------- */
+function mk128(){ const g = id => document.getElementById(id), f = g('mf'), k = g('m_k'), d = g('m_d'), t = g('m_t'); if (!f || !k || !d || !t || g('m_pu')) return;
+  const row = d.closest('.row'); if (!row) return;
+  row.insertAdjacentHTML('afterend', `<label><span>수집 목적 <span class="note">(응답 창 맨 위에 보임 · 사역 운영 규정 8.3 ①)</span></span><input id="m_pu" maxlength="80"></label>
+    <p class="note" id="m_keep" style="margin:-4px 0 0">보관: 올해 12월 31일까지 — 그날 연락처 같은 개인 정보는 지우고 인원 · 비율만 남깁니다(8.3 ③). 연락처는 사역 운영에 꼭 필요할 때만 받습니다.</p>
+    <div id="m_exb"><label class="opt" style="margin:0"><input type="checkbox" id="m_ex"> <span>참석 명단을 외부 기관에 냅니다 <span class="note" style="display:block">군부대 출입 등 — 응답 창 · 톡방 안내에 "이 기관에 제출됩니다"가 붙습니다 (8.3 ⑥)</span></span></label><input id="m_exn" maxlength="40" placeholder="제출처 — 예: ○○부대" hidden style="margin-top:4px"></div>`);
+  const pu = g('m_pu'), ex = g('m_ex'), exn = g('m_exn'), exb = g('m_exb'), canEx = () => ['참석', '신청'].includes(k.value);
+  const sync = () => { if (!pu.dataset.ed) pu.value = PU128[k.value] || ''; exb.hidden = !canEx(); if (!canEx()) ex.checked = false; exn.hidden = !ex.checked; };
+  pu.addEventListener('input', () => { pu.dataset.ed = '1'; });
+  ex.addEventListener('change', () => { ex.dataset.ed = '1'; exn.hidden = !ex.checked; if (ex.checked) exn.focus(); });
+  t.addEventListener('input', () => { if (ex.dataset.ed || !canEx()) return; const on = svExAuto128(t.value); ex.checked = on; if (on && !exn.value) exn.value = '군부대'; exn.hidden = !on; });
+  const k0 = k.onchange; k.onchange = function(){ if (k0) k0.apply(this, arguments); sync(); };
+  sync();
+  const h0 = f.onsubmit; f.onsubmit = ev => { const on = ex.checked && canEx(), X = on ? exn.value.trim() : '', P = pu.value.trim() || PU128[k.value] || '';
+    if (on && !X) { ev.preventDefault(); toast('제출처를 적어 주세요 — 응답 창에 "이 기관에 제출됩니다"로 보입니다'); exn.hidden = false; exn.focus(); return; }
+    const n0 = SURVEYS.length, c0 = copy;
+    if (X) copy = (txt, msg) => c0(txt + '\n' + exLine128({ex:X}), msg);   // 톡방 안내에도 제출 사실을(8.3 ⑥)
+    try { h0.call(f, ev); } finally { copy = c0; }
+    if (SURVEYS.length > n0) { const sv = SURVEYS[0]; sv.pu = P; if (X) sv.ex = X; render(); } };
+}
+{ const _om128 = openMake; openMake = function(){ const r = _om128.apply(this, arguments); try { mk128(); } catch (x) { console.error('조사 만들기 — 수집 목적', x); } return r; }; }
+
+/* ---------- 응답 창 · 조사 화면 ---------- */
+{ const _an128 = answer; answer = function(id){ const r = _an128.apply(this, arguments); try { const sv = SURVEYS.find(x => x.id === id), f = document.getElementById('af'); if (sv && f && !document.getElementById('af_pu')) f.insertAdjacentHTML('afterbegin', svNote128(sv, 'af_pu')); } catch (x) { console.error('응답 창 — 수집 목적', x); } return r; }; }
+{ const _vs128 = V.survey; V.survey = function(id){ let h = _vs128.apply(this, arguments); try { const sv = SURVEYS.find(x => x.id === id); if (sv && typeof h === 'string' && visible(sv) && h.includes('<div class="two sec">')) h = h.replace('<div class="two sec">', svNote128(sv, 'sv_pu', true) + '<div class="two sec">'); } catch (x) { console.error('조사 화면 — 수집 목적', x); } return h; }; }
+{ const _nt128 = nudgeText; nudgeText = function(sv){ let t = _nt128.apply(this, arguments); try { if (sv && sv.ex && typeof t === 'string') t += '\n' + exLine128(sv); } catch (x) {} return t; }; }
+/* 외부 제출용 명단(v123)을 참석으로 답한 사람으로 채워 엶 — 이름 외 정보는 교적부에서 */
+function svExt128(id){ const sv = SURVEYS.find(x => x.id === id); if (!sv) return; if (!extCan123()) { noPerm('지도목사 · 부장 · 임원'); return; }
+  const names = [...new Set(Object.entries(sv.resp || {}).filter(([, r]) => r && (sv.kind === '신청' || r.a === '참석')).map(([k]) => svWho(k) || k).filter(Boolean))];
+  EXT123.sel.clear(); EXT123.miss = []; EXT123.to = sv.ex || ''; EXT123.d = TODAYISO; extList123();
+  const ta = document.getElementById('xl_names'); if (ta && names.length) { ta.value = names.join('\n'); extPaste123(); } }
+
+/* ---------- 서버 — 조사 탭의 수집 목적 · 제출처 ---------- */
+{ const C = CODEC.조사, d0 = C.dec; C.dec = R => { const r = d0(R); try { R.forEach(row => { const s = SURVEYS.find(x => String(x.id) === String(CV.n(row['No']))); if (!s) return; cvSet(s, 'pu', CV.o(row['수집 목적'])); cvSet(s, 'ex', CV.o(row['제출처'])); }); } catch (x) { console.error('조사 — 수집 목적 읽기', x); } return r; }; }
+
+CHANGELOG.unshift(['2026-11-27', '', '사역 — 조사의 수집 목적 · 외부 제출 알림', [
+  '조사 만들기에 "수집 목적" 칸을 넣었습니다(비우면 종류의 기본 목적). 응답 창과 조사 화면 맨 위에 수집 목적과 보관 기간(올해 12월 31일까지 — 그날 연락처 같은 개인 정보는 지우고 인원 · 비율만)이 보입니다(사역 운영 규정 8.3 ① · ③)',
+  '참석 · 신청 조사는 "참석 명단을 외부 기관에 냅니다"를 켜고 제출처를 적을 수 있습니다 — 응답 창 · 톡방 안내 · 독려 문구에 "이 기관에 제출됩니다"가 붙고, 임원은 조사 화면에서 참석으로 답한 사람으로 외부 제출용 명단을 바로 엽니다(8.3 ⑥). 군선교 · 군위문 제목이면 켜진 채로 제안',
+  '서버를 새 판(2026-11-27g)으로 올리면 조사 탭 끝에 수집 목적 · 제출처 칸이 생깁니다']]);
 
 autoBdayNotice();
 render();
