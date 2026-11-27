@@ -7185,7 +7185,7 @@ V.admin = () => {
       <dt>교적부 보관 기준</dt><dd style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><label style="display:flex;gap:4px;align-items:center;font-size:12.5px">재적 제외 대상 — 마지막 출석 뒤 (개월) <input class="yr" type="number" style="width:64px;margin:0" value="${CARE_RULE.archiveMonths}" onchange="CARE_RULE.archiveMonths=+this.value;log('관리','보관 기준','archive=' + this.value)"></label><label style="display:flex;gap:4px;align-items:center;font-size:12.5px">보관 → 파기 가능 (개월) <input class="yr" type="number" style="width:64px;margin:0" value="${CARE_RULE.purgeMonths}" onchange="CARE_RULE.purgeMonths=+this.value;log('관리','보관 기준','purge=' + this.value)"></label><span class="note">전출 · 졸업은 1월 1일 전환 때 자동 보관</span></dd></dl></div>`;
   if (cur === '설정 · 연도') body += itemAdmin();
   if (live && cur === '설정 · 연도') body = body.replace(/<tbody>[\s\S]*?<\/tbody>/, `<tbody><tr><td class="full"><b>${S.year}</b></td><td data-l="사역">${S.year}_사역마스터</td><td data-l="목양">${S.year}_목양마스터</td><td data-l="회계">${S.year}_회계장부</td><td data-l="예배">${S.year}_주일예배운영</td><td data-l="상태"><span class="pill ok">올해</span> <span class="pill grey">시트 연결 전</span></td></tr><tr><td class="full"><b>${NY}</b></td><td data-l="사역" colspan="4"><span class="muted">다음 해 만들기에서 — 사역 11월 · 목양 12월 · 회계 1월</span></td><td data-l="상태"><span class="pill warn">다음 해</span></td></tr></tbody>`);   // v97 — 올해 기준(예시 해는 전처럼)
-  if (cur === '다음 해 만들기') { const steps = [['사역', '11월 임리더 MT 금요일 (임원 세션)', '총무', '2027 폴더(1_운영 · 3_회계 · 4_사역 — 2_는 만들지 않음 · 영수증은 3_회계 안) 만들기 → 2026 사역마스터 복사 → 사역DB "(다음 연도)" 행을 2027로, 준비기간 보정 → 설정에 파일 ID 기록 → 연도 선택에 "2027 다음 해" 열림'], ['목양', '12월 마지막 주일 (셀 편성 공개)', '목양국장', '2027 목양마스터 새 파일 → 교적부 상태 · 셀 · 등록일 이어 적기 → 셀 편성표 공개 → 사용자 탭 셀 배정 갱신 → 2026 파일 접근 1층으로'], ['회계', '1월 첫 주 (12월 전월 정리 뒤)', '회계', '2026 장부 잠금 → 2027 장부 · 주일 예배 운영 새 파일 → 연간 요약 2026 숫자 확정 → 1/1부터 이번 해 = 2027']];
+  if (cur === '다음 해 만들기') { const steps = [['사역', '11월 임리더 MT 금요일 (임원 세션)', '총무', '2027 폴더(1_운영 · 3_회계 · 4_사역 — 2_는 만들지 않음 · 영수증은 3_회계 안) 만들기 → 2026 사역마스터 복사 → 사역DB "(다음 연도)" 행을 2027로, 준비기간 보정 → 설정에 파일 ID 기록 → 연도 선택에 "2027 다음 해" 열림'], ['목양', '12월 마지막 주일 (셀 편성 공개)', '목양국장', '2027 목양마스터 새 파일 → 교적부 상태 · 셀 · 등록일 · 마지막 출석 이어 적기(마지막 출석은 서버가 매일 새벽 주간 입력에서 채움) → 셀 편성표 공개 → 사용자 탭 셀 배정 갱신 → 2026 파일 접근 1층으로'], ['회계', '1월 첫 주 (12월 전월 정리 뒤)', '회계', '2026 장부 잠금 → 2027 장부 · 주일 예배 운영 새 파일 → 연간 요약 2026 숫자 확정 → 1/1부터 이번 해 = 2027']];
     body = `
     <div class="tlist">${steps.map(([k, when, who, what]) => { const done = ADMIN.made.includes(k); return `<div class="trow ${done ? 'done' : ''}" style="grid-template-columns:28px 1fr auto"><span class="chk ${done ? 'on' : ''}">${done ? '✓' : ''}</span><div><b>2027 ${k} 만들기 <small class="note">· ${when} · ${who}</small></b><br><small class="note">${what}</small></div>${done ? '<span class="pill ok">만들어짐</span>' : `<button class="btn s p" onclick="makeNext('${k}')">${k === '사역' || ADMIN.made.includes('사역') ? '지금 만들기 (시연)' : '사역 먼저'}</button>`}</div>`; }).join('')}</div>
     `; if (live) body = `<div class="callout" style="margin:0 0 10px">${NY}년 것을 만드는 차례입니다. 실제 시트와 이어지는 것은 저장 연결 뒤 — 지금은 순서만 봅니다.</div>` + body.replace(/2027/g, '\u0001').replace(/2026/g, String(S.year)).replace(/\u0001/g, String(NY)).replace(/makeNext\('[^']*'\)/g, "toast('저장 연결 뒤에 열립니다')").replace(/지금 만들기 \(시연\)/g, '저장 연결 뒤'); }
@@ -7193,7 +7193,7 @@ V.admin = () => {
 };
 function makeNext(k){ if (k !== '사역' && !ADMIN.made.includes('사역')) { toast('사역 마스터를 먼저 만듭니다'); return; } if (ADMIN.made.includes(k)) { toast('이미 만들어져 있습니다'); return; }
   modal(`<div class="head"><div><small>다음 해 만들기 · ${k}</small><h3>2027 ${k} 만드는 중</h3></div></div><div class="cont"><div id="mkp" class="tlist"></div></div>`);
-  const steps = k === '사역' ? ['2027 폴더 만들기 (1_운영 · 3_회계 · 4_사역 — 2_는 만들지 않음: 목양 자료는 다락방에만 · 영수증은 3_회계 안)', '2026 사역마스터 복사 → 2027_사역마스터', '사역DB "(다음 연도)" 행 2027로 옮기기 · 준비기간 보정', '설정 탭에 파일 ID 기록', '연도 선택에 "2027 다음 해" 열기'] : k === '목양' ? ['2027_목양마스터 새 파일', '교적부 상태 · 셀 · 등록일 이어 적기', '셀 편성표 · 사용자 탭 셀 배정 갱신', '2026 파일 접근을 1층으로'] : ['2026 장부 잠금', '2027_회계장부 · 2027_주일예배운영 새 파일', '연간 요약 2026 숫자 확정', '1/1부터 이번 해 = 2027'];
+  const steps = k === '사역' ? ['2027 폴더 만들기 (1_운영 · 3_회계 · 4_사역 — 2_는 만들지 않음: 목양 자료는 다락방에만 · 영수증은 3_회계 안)', '2026 사역마스터 복사 → 2027_사역마스터', '사역DB "(다음 연도)" 행 2027로 옮기기 · 준비기간 보정', '설정 탭에 파일 ID 기록', '연도 선택에 "2027 다음 해" 열기'] : k === '목양' ? ['2027_목양마스터 새 파일', '교적부 상태 · 셀 · 등록일 · 마지막 출석 이어 적기', '셀 편성표 · 사용자 탭 셀 배정 갱신', '2026 파일 접근을 1층으로'] : ['2026 장부 잠금', '2027_회계장부 · 2027_주일예배운영 새 파일', '연간 요약 2026 숫자 확정', '1/1부터 이번 해 = 2027'];
   let i = 0; const el = document.getElementById('mkp'); const tick = () => { if (i < steps.length) { el.insertAdjacentHTML('beforeend', `<div class="trow" style="grid-template-columns:28px 1fr"><span class="chk on">✓</span><b>${steps[i]}</b></div>`); i++; setTimeout(tick, 350); } else { ADMIN.made.push(k); ADMIN.next = true; log('관리', '다음 해 만들기', `2027 ${k}`); closeModal(); render(); toast(`2027 ${k} 만들어짐 — 설정 탭에 기록`); } }; tick(); }
 V.roles = () => {
   const my = S.role ? tier() : null, tiers = (my === null || my === 0) ? [0, 1, 2] : [my], NAMES = ['목사 · 부장','임원','셀리더 · 팀장'];
@@ -8330,7 +8330,7 @@ function sheetTabs(lite){
   tab(F2, '셀편성', '노랑', '다락방(관리자)', '셀 목록의 원본 — 편성은 관리자(셀 편성판). 셀원 명단은 교적부의 셀 열', ['셀 이름', '셀리더', '셀리더 사용자 ID', '부리더', '순서', '상태|운영,폐지', '인원'], Object.keys(CELLS).map((c, i) => [c, cellLeader(c), UID[cellLeader(c)] || '', (CELLS[c].find(m => m.vice) || {}).n || '', i + 1, '운영', CELLS[c].length]));
   tab(F2, '새가족명부', '노랑', '다락방', '', ['No', '이름', '나이', '연락처', '구분|기신자,태신자', '인도자', '상태', '양육 담당', '첫 방문일', '단계', '주차', '교육(4)', '마지막 연락', '파송일', '셀', '주소', ...(srvAtLeast(SRV27A) ? ['등록 확정일'] : [])], nid119(NEWFAM).map((x, i) => [x.id, x.n, N(x.age), N(x.phone), x.kind, N(x.lead), N(x.job), N(x.care), x.since, x.stage, N(x.wk), A(x.edu), N(x.last), N(x.sent), N(x.cell), N(x.addr), ...(srvAtLeast(SRV27A) ? [N(x.reg)] : [])]).concat(nfGoneRows119()));
   tab(F2, '새가족심방', '노랑', '다락방', '새가족 심방 기록 — 장부에는 "새가족 심방 n명"만', ['No', '일자', '대상들', '동행자', '청년 동행', '동행 이유', '인원', '금액', '결제 수단', '단가 초과 사유', '입력자', '청구 No', '장부 ID'], NFVISITS.map(x => [x.id, x.date, A(x.targets), A(x.with), N(x.youth), N(x.why), x.people, x.amt, x.pay, N(x.over), x.by, N(x.claim), N(x.ledger)]));
-  tab(F2, '돌봄', '노랑', '다락방', '돌봄 대상과 연락 기록', ['교적부 ID', '이름', '까닭', '시작일', '마지막 연락', '다음 연락', '연락 기록(JSON)', '자동'], CARE.map(x => [mid(x.n), x.n, x.why, x.since, N(x.last), N(x.next), J(x.log), Y(x.auto)]));
+  tab(F2, '돌봄', '노랑', '다락방', '돌봄 대상과 연락 기록. 빼면 상태 칸에 삭제(다시 올리면 되살림)', ['교적부 ID', '이름', '까닭', '시작일', '마지막 연락', '다음 연락', '연락 기록(JSON)', '자동', ...(srvAtLeast('2026-11-27h') ? ['상태|삭제'] : [])], CARE.map(x => [mid(x.n), x.n, x.why, x.since, N(x.last), N(x.next), J(x.log), Y(x.auto), ...(srvAtLeast('2026-11-27h') ? [''] : [])]));
   tab(F2, '상태변경', '노랑', '다락방', '제안 → 확인 → 기록', ['No', '교적부 ID', '이름', '이후', '제안자', '제안일', '상태|대기,승인,반려,확인', '근거(JSON)', '확인자'], APPROVALS.filter(a => a.who).map(a => [a.id, mid(a.who), a.who, a.to, a.owner, a.date, a.status, J(a.detail), N(a.ok)]));
   tab(F2, '보관함', '노랑', '다락방', '장결 → 보관 → 파기(관리자). 전출 · 졸업은 1월 1일에 자동', ['이름', '있던 셀', '상태', '보관일', '보관자', '사유', '원래 줄(JSON)'], ARCHIVE.map(x => [x.n, x.cell, x.status, x.at, x.by, x.reason, J(x.m)]).concat(ARBACK120.map(x => [x.n, N(x.cell), '되살림', x.at, N(x.by), '', '{}'])));
   tab(F5, '심방일지', '노랑', '다락방', '별도 파일 — 지도목사 · 부장 · 회장 · 목양국장만, 심방 비밀번호를 한 번 더. 사실만 적음', ['No', '일자', '교적부 ID', '이름', '셀', '유형', '담당', '계기', '요약', '후속', '다음 연락', '상태|진행,종결', '비공개'], VISITS.map(v => [v.id, v.date, mid(v.m), v.m, v.cell, v.type, v.by, v.why, v.sum, N(v.follow), N(v.next), v.status, Y(v.secret)]));
@@ -10271,6 +10271,51 @@ CHANGELOG.unshift(['2026-11-27', '', '사역 — 조사의 수집 목적 · 외�
   '조사 만들기에 "수집 목적" 칸을 넣었습니다(비우면 종류의 기본 목적). 응답 창과 조사 화면 맨 위에 수집 목적과 보관 기간(올해 12월 31일까지 — 그날 연락처 같은 개인 정보는 지우고 인원 · 비율만)이 보입니다(사역 운영 규정 8.3 ① · ③)',
   '참석 · 신청 조사는 "참석 명단을 외부 기관에 냅니다"를 켜고 제출처를 적을 수 있습니다 — 응답 창 · 톡방 안내 · 독려 문구에 "이 기관에 제출됩니다"가 붙고, 임원은 조사 화면에서 참석으로 답한 사람으로 외부 제출용 명단을 바로 엽니다(8.3 ⑥). 군선교 · 군위문 제목이면 켜진 채로 제안',
   '서버를 새 판(2026-11-27g)으로 올리면 조사 탭 끝에 수집 목적 · 제출처 칸이 생깁니다']]);
+
+/* ==================== v129 — 목양 ⑥: 남은 것 — 주간 입력의 특별관리 · 다시 나온 사람의 자동 돌봄 줄 · 돌봄에서 빼면 시트에서도 · 마지막 출석 이어 적기(서버) (규정 v0.3 목양 5.1 · 5.2 · 9장) · 서버 2026-11-27h ==================== */
+const SRV27H = '2026-11-27h';   // 돌봄 탭 끝에 '상태'(빼기 = '삭제' 표시 — 다시 올리면 되살림) · 교적부 '마지막 출석'을 서버가 매일 주간 입력에서 이어 적음
+
+/* ---------- ① 주간 입력 — 특별관리인 사람을 표시하고 '모두' 단추에서 뺌(출석률 · 셀 인원에서 빠지는 사람 — 목양 5.2 ③) ---------- */
+{ const _we129 = weekEntry; weekEntry = function(cell){ window._WK129 = cell; const r = _we129.apply(this, arguments);
+    try { const ms = CELLS[cell] || [], W = [...document.querySelectorAll('#modal .wkc')]; let n = 0;
+      ms.forEach((m, i) => { if (!m || m.status !== '특별관리' || !W[i]) return; n++; W[i].classList.add('sp129'); const sm = W[i].querySelector('.nm small');
+        if (sm) sm.insertAdjacentHTML('afterbegin', `<span class="pill grey" style="font-size:10px;margin:2px 0" title="출석률 · 셀 인원에서 빠짐 — 오면 그대로 체크">특별관리${m.spBack ? ` · ${esc(m.spBack)}` : ''}</span> `); });
+      const bk = document.getElementById('wkbulk'); if (n && bk) bk.insertAdjacentHTML('beforeend', `<span class="note" id="wksp129">· 특별관리 ${n}명은 '모두'에서 빠집니다(오면 그대로 체크)</span>`); } catch (x) { console.error('주간 입력 — 특별관리', x); }
+    return r; }; }
+wkAll = function(k){ const ms = CELLS[window._WK129] || [], L = [...document.querySelectorAll('#modal .wkc input[type=checkbox]')].filter(x => { const mm = x.id.match(new RegExp('^w(\\d+)' + k + '$')); return !!mm && (ms[+mm[1]] || {}).status !== '특별관리'; });
+  if (!L.length) return; const on = !L.every(x => x.checked); L.forEach(x => { x.checked = on; const lb = x.closest('.tog'); if (lb) lb.classList.toggle('on', on); x.dispatchEvent(new Event('input', {bubbles:true})); }); };
+
+/* ---------- ② 다시 나온 사람의 자동 돌봄 줄 — 장결자로 자동으로 올라왔다가 다시 나오면(구분이 풀림) 연락 기록이 없는 줄은 저절로 빠지고, 기록이 있는 줄은 '다시 나옴'으로 표시(목양국장이 빼기) ---------- */
+const careRet129 = c => !!c && !!c.auto && !absOf(c.n);
+const careId129 = c => { const m = Object.values(CELLS).flat().find(x => x && x.n === c.n); return String((m && m.id) || ((typeof cvMem === 'function' ? cvMem() : []).find(([, x]) => x && x.n === c.n) || [0, {}])[1].id || ''); };   // 돌봄 탭의 열쇠 = 교적부 ID
+const careWhy129 = c => { const m = Object.values(CELLS).flat().find(x => x && x.n === c.n); return !m ? '명단에서 빠짐' : m.status === '특별관리' ? '특별관리로 바뀜' : '다시 나옴'; };
+const CARECLR129 = new Set();   // 이번 접속에서 서버에 지우기를 보낸 줄(같은 줄을 또 보내지 않게)
+function careClean129(){ if (!careAutoOk119()) return; const L = CARE.filter(c => careRet129(c) && !(c.log || []).length); if (!L.length) return;
+  const drop = () => { let k = 0; L.forEach(c => { const i = CARE.indexOf(c); if (i >= 0) { CARE.splice(i, 1); k++; } }); if (k) log('목양', '돌봄 자동 줄 정리', `다시 나옴 ${k}명`); return k; };   // 이름은 적지 않음
+  if (!on114()) { drop(); return; }   // 예시 · 저장 연결 전 — 화면에서만
+  if (!srvLive() || S.arch || !srvAtLeast(SRV27H)) return;   // 불러오는 중 · 지난 해 · 옛 서버(돌봄 줄을 지우지 못함 — '다시 나옴'으로만 보임)에서는 하지 않음
+  const ids = L.map(careId129).filter(id => id && !CARECLR129.has(id)); if (!ids.length) return; ids.forEach(id => CARECLR129.add(id));
+  api('write', {tab:'돌봄', op:'delete', rows:ids.map(id => ({'교적부 ID':id}))}).then(j => { if (!j || !j.ok) { console.warn('돌봄 자동 줄 정리 안 됨', j && j.error); return; } if (drop()) render(); }).catch(e => console.warn('돌봄 자동 줄 정리', e)); }
+{ const _ca129 = careAuto; careAuto = function(){ const r = _ca129.apply(this, arguments); try { careClean129(); } catch (x) { console.error('돌봄 자동 줄 정리', x); } return r; }; }
+{ const _cc129 = careCard; careCard = function(){ let h = _cc129.apply(this, arguments); try { if (typeof h === 'string') CARE.filter(careRet129).forEach(c => { const a = `<div class="carerow" data-n="${esc(c.n)}"><div style="min-width:0"><b>${esc(c.n)}</b> `;
+      if (h.includes(a)) h = h.split(a).join(a + `<span class="pill ok ret129" style="font-size:10px" title="장결자로 자동으로 올라왔다가 구분이 풀림 — 연락 기록이 있어 남겨 둠">${careWhy129(c)}${S.role === '목양국장' ? ' — 빼기로 정리' : ''}</span> `); }); } catch (x) { console.error(x); } return h; }; }
+
+/* ---------- ③ 돌봄에서 빼기 — 서버 판에서는 시트에서도 빠짐(전에는 다시 불러오면 돌아왔음). 시트에는 '삭제' 표시로 남고, 다시 올리면 되살아남 ---------- */
+careOff = function(i){ const c = CARE[i]; if (!c || S.role !== '목양국장') { noPerm('목양국장'); return; }
+  modal(`<div class="head"><div><small>한가족 · 돌봄 대상</small><h3>${esc(c.n)} — 대상에서 뺄까요?</h3><small>연락 기록 ${(c.log || []).length}줄은 작업 기록에 남고, 목록에서는 사라집니다.${srvLive() ? ' 시트에는 \'삭제\' 표시로 남습니다.' : ''}</small></div></div><div class="cont" style="display:flex;gap:8px"><button class="btn p" id="careoffy">빼기</button><button class="btn" onclick="closeModal()">취소</button></div>`, () => {
+    document.getElementById('careoffy').onclick = async () => { const btn = document.getElementById('careoffy');
+      if (on114() && yearMode() === 'empty' && !SRV.ready) { toast('불러오는 중입니다 — 잠시 뒤 다시 눌러 주세요'); return; }
+      if (srvLive()) { if (!srvAtLeast(SRV27H)) { toast('서버가 옛 판이라 아직 시트에서 빠지지 않습니다 — 서버를 새 판(2026-11-27h)으로 올린 뒤에 됩니다'); return; }
+        if (SRV.busy || srvPending()) { toast('저장하는 중입니다 — 잠시 뒤 다시 눌러 주세요'); srvSync(); return; }
+        btn.disabled = true; btn.textContent = '빼는 중…'; const j = await api('write', {tab:'돌봄', op:'delete', rows:[{'교적부 ID':careId129(c)}]});
+        if (!j || !j.ok) { toast((j && j.error) || '빼지 못했습니다'); btn.disabled = false; btn.textContent = '빼기'; return; } }
+      const k = CARE.indexOf(c); if (k >= 0) CARE.splice(k, 1); log('목양', '한가족 돌봄 대상에서 뺌', `${c.n} · 기록 ${(c.log || []).length}줄`); closeModal(); render(); toast(`${c.n} — 돌봄 대상에서 뺐습니다`); }; }); };
+
+CHANGELOG.unshift(['2026-11-27', '', '목양 — 주간 입력의 특별관리 · 다시 나온 사람의 돌봄 줄 · 마지막 출석', [
+  '주간 입력 창에 특별관리인 사람을 표시하고, "낮예배 모두"처럼 한 번에 체크하는 단추에서는 뺍니다(출석률 · 셀 인원에서 빠지는 사람 — 오면 그대로 체크)',
+  '장결자로 자동으로 올라온 돌봄 줄은 그 사람이 다시 나오면 연락 기록이 없을 때 저절로 빠지고, 기록이 있으면 "다시 나옴"으로 표시됩니다(목양국장이 빼기)',
+  '돌봄에서 빼면 서버 시트에서도 빠집니다(시트에는 삭제 표시로 남고, 다시 올리면 되살아남) — 전에는 다시 불러오면 돌아왔습니다',
+  '서버가 매일 새벽 교적부의 "마지막 출석"을 주간 입력에서 이어 적습니다 — 해가 바뀌어 교적부를 새 파일로 옮겨도 장결 · 재적 제외 셈이 이어집니다(서버 2026-11-27h)']]);
 
 autoBdayNotice();
 render();
